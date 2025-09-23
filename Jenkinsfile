@@ -19,7 +19,15 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                sh 'cd terraform && terraform init'
+                sh 'cd terraform && terraform workspace select ' + env.BRANCH_NAME + ' && terraform init'
+            }
+        }
+        stage('Terraform plan') {
+            steps {
+                script {
+                    def tf_plan = sh(script: 'cd terraform && terraform plan -input=false -out=tfplan', returnStdout: true).trim()
+                    echo "${tf_plan}"
+                }
             }
         }
     }
