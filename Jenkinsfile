@@ -1,5 +1,12 @@
 pipeline {
     agent any
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws_homelab_access_key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws_homelab_secret_access_key')
+        VAULT_SKIP_VERIFY     = true
+        VAULT_ADDR            = 'https://vault.myrobertson.net:8200'
+        VAULT_TOKEN           = credentials('vault_token')
+    }
     stages {
         stage('Git Checkout') {
             steps {
@@ -10,9 +17,9 @@ pipeline {
                 }
             }
         }
-        stage('hello') {
+        stage('Terraform Init') {
             steps {
-                sh 'echo Hello Jenkins!'
+                sh 'cd terraform && terraform init'
             }
         }
     }
