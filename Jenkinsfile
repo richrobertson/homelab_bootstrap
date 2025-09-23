@@ -19,7 +19,17 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                sh 'cd terraform && terraform workspace select ' + env.BRANCH_NAME + ' && terraform init'
+                sh 'cd terraform && terraform init'
+            }
+        }
+        stage('Terraform Workspace (if not main)') {
+            when {
+                expression {
+                    return env.BRANCH_NAME != 'main';
+                }
+            }
+            steps {
+                sh 'terraform workspace select ' + env.BRANCH_NAME
             }
         }
         stage('Terraform plan') {
