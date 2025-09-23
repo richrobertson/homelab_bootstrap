@@ -29,7 +29,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'terraform workspace select ' + env.BRANCH_NAME
+                sh 'cd terraform && terraform workspace select -or-create ' + env.BRANCH_NAME
             }
         }
         stage('Terraform plan') {
