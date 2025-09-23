@@ -40,5 +40,19 @@ pipeline {
                 }
             }
         }
+        stage('Approval') {
+            steps {
+                script {
+ 
+                    // Wait for approval
+                    input message: 'Do you approve this deployment?'
+                }
+            }
+        }
+        stage('Terraform apply') {
+            steps {
+                sh 'cd terraform && terraform apply -input=false -auto-approve tfplan'
+            }
+        }
     }
 }
