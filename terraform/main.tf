@@ -20,6 +20,18 @@ module "nodes" {
 
 }
 
+module "flux" {
+  source = "./flux"
+  github_org = "richrobertson"
+  github_repository = "homelab_flux"
+  kubernets_cluster_endpoint = module.nodes.kubernetes_client_configuration.host
+  kubernets_client_certificate = base64decode(module.nodes.kubernetes_client_configuration.client_certificate)
+  kubernets_client_key = base64decode(module.nodes.kubernetes_client_configuration.client_key)
+  kubernets_cluster_ca_certificate = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
+  github_token = data.vault_generic_secret.github_token.data["token"]
+  cluster_name = local.cluster_short_name
+}
+
 module firewall {
   source = "./firewall"
   fw_count = 0
