@@ -51,7 +51,7 @@ pipeline {
                         if (e.getMessage().contains("exit code 2")) {
                             env.TERRAFORM_PLAN_HAS_CHANGES = 'true'
                             sh 'cd terraform && terraform show -no-color tfplan.out > plan_output.txt'
-                            env.TERRAFORM_PLAN_OUTPUT = readFile('terraform/plan_output.txt').trim
+                            env.TERRAFORM_PLAN_OUTPUT = readFile('terraform/plan_output.txt').trim()
                             env.TERRAFORM_PLAN_SUMMARY = sh(script: 'echo "' + env.TERRAFORM_PLAN_OUTPUT  + '" | grep "Plan: " ', returnStdout: true).trim()
                             echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                         } else {
