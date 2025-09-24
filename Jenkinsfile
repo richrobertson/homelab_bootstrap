@@ -51,13 +51,7 @@ pipeline {
                     // Post the plan output as a comment on the PR
                     def tf_plan = sh(script: 'cd terraform && terraform show -no-color tfplan', returnStdout: true).trim()
                     def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${tf_plan}\n```"
-                    sh """
-                        curl -s -S -H "Authorization: token ${credentials('c74b96b5-fb04-49f3-ab91-aeea0bddca35')}" \
-                             -H "Content-Type: application/json" \
-                             -X POST \
-                             -d '{ "body": "${comment_body.replace('"', '\\"').replace('\n', '\\n')}" }' \
-                             "https://api.github.com/repos/richrobertson/homelab_bootstrap/pulls/${env.CHANGE_ID}/comments"
-                    """
+                    githubPRComment(body: comment_body )
                 }
             }
         }
