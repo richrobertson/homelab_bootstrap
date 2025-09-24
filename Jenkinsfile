@@ -41,14 +41,14 @@ pipeline {
                         // If it exits with 2 (changes), the try-catch block will not execute this part.
                         env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
 
-                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'terraform show tfplan.out | grep "Plan: "', returnStdout: true).trim()
-                        echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                     } catch (Exception e) {
                         // If terraform plan exits with 2 (changes), it will throw an exception in Jenkins,
                         // as Jenkins treats non-zero exit codes as failures by default.
                         // We catch it and set a flag to indicate changes.
                         if (e.getMessage().contains("exit code 2")) {
                             env.TERRAFORM_PLAN_HAS_CHANGES = 'true'
+                            env.TERRAFORM_PLAN_SUMMARY = sh(script: 'terraform show tfplan.out | grep "Plan: "', returnStdout: true).trim()
+                            echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                         } else {
                             // Handle other errors or re-throw if it's a critical failure
                             error "Terraform plan failed unexpectedly: ${e.getMessage()}"
