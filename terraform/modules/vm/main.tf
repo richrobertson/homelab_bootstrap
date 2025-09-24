@@ -13,6 +13,12 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   node_name = var.node_name
 
+  on_boot = true
+
+  machine = "q35"
+  scsi_hardware = "virtio-scsi-single"
+  bios          = "seabios"
+
   cpu {
     cores = var.cpu_cores
     type  = "x86-64-v3"
@@ -20,6 +26,33 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   memory {
     dedicated = tonumber(var.memory_in_gb) * 1024
+  }
+
+  cdrom {
+    file_id = "none"
+  }
+
+  initialization {
+
+    datastore_id = "p0"
+    interface = "ide0"
+    dns {
+      domain = "myrobertson.net"
+      servers = [ "192.168.1.245", "192.168.1.244" ]
+    }
+
+    dynamic "ip_config" {
+      for_each = var.networks
+      content {
+        ipv4 {
+          address = ip_config.value["ip4_address"]
+          gateway = ip_config.value["ip4_gateway"]
+        }
+        ipv6 {
+          address = "dhcp"
+        }
+      }
+    }
   }
 
   dynamic "network_device" {
@@ -40,9 +73,21 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   disk {
     datastore_id = "p0"
+    interface    = "scsi0"
+    iothread     = true
+    cache        = "writethrough"
+    discard      = "on"
+    ssd          = true
+    file_format  = "raw"
+
     import_from  = var.cloud_image_id
-    interface    = "virtio0"
-    size         = "32"
+    size         = "20"
   }
 
+}
+
+resource "proxmox_virtual_environment_haresource" "vm" {
+  resource_id  = "vm:${proxmox_virtual_environment_vm.vm.vm_id}"
+  state        = "started"
+  comment      = "Managed by Terraform"
 }

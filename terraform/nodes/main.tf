@@ -9,15 +9,16 @@ terraform {
 }
 
 locals {
-  cloud_image_url = "https://factory.talos.dev/image/88d1f7a5c4f1d3aba7df787c448c1d3d008ed29cfb34af53fa0df4336a56040b/v1.11.1/metal-amd64.qcow2"
+  cloud_image_url = "https://factory.talos.dev/image/dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586/v1.11.1/nocloud-amd64.raw.xz"
 }
 
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  count = 0
   content_type = "import"
   datastore_id = "cephfs"
   node_name    = "pve3"
+  file_name = "nocloud-amd64.iso"
   url          = local.cloud_image_url
-  file_name    = "talos-cloud-image-${var.cluster_short_name}.qcow2"
   overwrite_unmanaged = true
 }
 
@@ -33,15 +34,17 @@ module "control_plane_vms" {
       bridge = var.network_bridge
       firewall = false
       vlan_tag = var.network_vlan_id
+      ip4_address = "192.168.${var.network_vlan_id}.${10 + count.index}/24"
+      ip4_gateway = "192.168.${var.network_vlan_id}.1"
     }
   ]
-  cloud_image_id = proxmox_virtual_environment_download_file.cloud_image.id
+  cloud_image_id = "cephfs:import/nocloud-amd64.raw"
 }
 
 
 module "worker_vms" {
   source = "../modules/vm"
-  name = "k8s-${var.cluster_short_name}-wrk-${count.index}"
+  name = "k8s-${var.cluster_short_name}-worker-${count.index}"
   count = var.worker_count
   node_name = var.proxmox_ve_nodes[count.index % length(var.proxmox_ve_nodes)]
   cpu_cores   = var.worker_cpu_cores
@@ -51,7 +54,32 @@ module "worker_vms" {
       bridge = var.network_bridge
       firewall = false
       vlan_tag = var.network_vlan_id
+      ip4_address = "192.168.${var.network_vlan_id}.${20 + count.index}/24"
+      ip4_gateway = "192.168.${var.network_vlan_id}.1"
     }
   ]
-  cloud_image_id = proxmox_virtual_environment_download_file.cloud_image.id
+  cloud_image_id = "cephfs:import/nocloud-amd64.raw"
+}
+
+module "talos_cluster" {
+  depends_on = [ module.worker_vms, module.control_plane_vms ]
+  source = "../modules/talos"
+  cluster_name     = var.cluster_short_name
+  cluster_endpoint = "https://192.168.${var.network_vlan_id}.10:6443"
+  node_data = {
+    controlplanes = {
+      for idx in range(var.control_plane_count) :
+      "192.168.${var.network_vlan_id}.${10 + idx}" => {
+        install_disk = "/dev/sda"
+        hostname     = "k8s-${var.cluster_short_name}-cp-${idx}"
+      }
+    }
+    workers = {
+      for idx in range(var.worker_count) :
+      "192.168.${var.network_vlan_id}.${20 + idx}" => {
+        install_disk = "/dev/sda"
+        hostname     = "k8s-${var.cluster_short_name}-worker-${idx}" 
+      }
+    }
+  }
 }
