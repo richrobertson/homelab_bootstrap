@@ -51,7 +51,7 @@ pipeline {
                     // Post the plan output as a comment on the PR
                     def tf_plan = sh(script: 'cd terraform && terraform show -no-color tfplan', returnStdout: true).trim()
                     def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${tf_plan}\n```"
-                    githubPRComment(body: comment_body )
+                    githubPRComment(comment: comment_body )
                 }
             }
         }
