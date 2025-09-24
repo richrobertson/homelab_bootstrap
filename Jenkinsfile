@@ -40,7 +40,33 @@ pipeline {
                 }
             }
         }
+        stage('Post plan status') {
+            when {
+                // This stage will only run if it's a pull request
+                // env.CHANGE_ID is a variable available in Multibranch Pipelines for PRs
+                expression { return env.CHANGE_ID != null } 
+            }
+            steps {
+                script {
+                    // Post the plan output as a comment on the PR
+                    def tf_plan = sh(script: 'cd terraform && terraform show -no-color tfplan', returnStdout: true).trim()
+                    def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${tf_plan}\n```"
+                    sh """
+                        curl -s -S -H "Authorization: token ${credentials('github_personal_access_token')}" \
+                             -H "Content-Type: application/json" \
+                             -X POST \
+                             -d '{ "body": "${comment_body.replace('"', '\\"').replace('\n', '\\n')}" }' \
+                             "https://api.github.com/repos/richrobertson/homelab_bootstrap/pulls/${env.CHANGE_ID}/comments"
+                    """
+                }
+            }
+        }
         stage('Approval') {
+            when {
+                // This stage will only run if it's a pull request
+                // env.CHANGE_ID is a variable available in Multibranch Pipelines for PRs
+                expression { return env.CHANGE_ID == null } 
+            }
             steps {
                 script {
  
@@ -50,6 +76,11 @@ pipeline {
             }
         }
         stage('Terraform apply') {
+            when {
+                // This stage will only run if it's a pull request
+                // env.CHANGE_ID is a variable available in Multibranch Pipelines for PRs
+                expression { return env.CHANGE_ID == null } 
+            }
             steps {
                 sh 'cd terraform && terraform apply -input=false -auto-approve tfplan'
             }

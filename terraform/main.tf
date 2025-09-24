@@ -1,6 +1,6 @@
 
 locals {
-  cluster_short_name = terraform.workspace == "default" ? "cl0" : "${terraform.workspace}"
+  cluster_short_name = terraform.workspace == "default" ? "production" : "${terraform.workspace}"
 }
 
 module "nodes" {
