@@ -35,8 +35,25 @@ pipeline {
         stage('Terraform plan') {
             steps {
                 script {
-                    def tf_plan = sh(script: 'cd terraform && terraform plan -input=false -out=tfplan', returnStdout: true).trim()
-                    echo "${tf_plan}"
+                    try {
+                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out' > tf_plan_output.txt
+                        // If plan exits with 0 (no changes) or 1 (error), we handle it here.
+                        // If it exits with 2 (changes), the try-catch block will not execute this part.
+                        env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
+
+                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'grep "Plan: " plan_output.txt', returnStdout: true).trim()
+                        echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
+                    } catch (Exception e) {
+                        // If terraform plan exits with 2 (changes), it will throw an exception in Jenkins,
+                        // as Jenkins treats non-zero exit codes as failures by default.
+                        // We catch it and set a flag to indicate changes.
+                        if (e.getMessage().contains("exit code 2")) {
+                            env.TERRAFORM_PLAN_HAS_CHANGES = 'true'
+                        } else {
+                            // Handle other errors or re-throw if it's a critical failure
+                            error "Terraform plan failed unexpectedly: ${e.getMessage()}"
+                        }
+                    }
                 }
             }
         }
@@ -49,17 +66,24 @@ pipeline {
             steps {
                 script {
                     // Post the plan output as a comment on the PR
-                    def tf_plan = sh(script: 'cd terraform && terraform show -no-color tfplan', returnStdout: true).trim()
-                    def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${tf_plan}\n```"
+                    def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${env.TERRAFORM_PLAN_SUMMARY}\n```"
                     githubPRComment(comment: { content: comment_body } )
                 }
+            }
+        }
+        stage('No Changes Detected') {
+            when {
+                expression { return env.TERRAFORM_PLAN_HAS_CHANGES == 'false' }
+            }
+            steps {
+                echo 'No changes detected by Terraform plan. Skipping apply stage.'
             }
         }
         stage('Approval') {
             when {
                 // This stage will only run if it's a pull request
                 // env.CHANGE_ID is a variable available in Multibranch Pipelines for PRs
-                expression { return env.CHANGE_ID == null } 
+                expression { return env.CHANGE_ID == null && env.TERRAFORM_PLAN_HAS_CHANGES == 'true' } 
             }
             steps {
                 script {
@@ -73,7 +97,7 @@ pipeline {
             when {
                 // This stage will only run if it's a pull request
                 // env.CHANGE_ID is a variable available in Multibranch Pipelines for PRs
-                expression { return env.CHANGE_ID == null } 
+                expression { return env.CHANGE_ID == null && env.TERRAFORM_PLAN_HAS_CHANGES == 'true' } 
             }
             steps {
                 sh 'cd terraform && terraform apply -input=false -auto-approve tfplan'
