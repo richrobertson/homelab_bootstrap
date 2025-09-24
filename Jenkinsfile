@@ -36,12 +36,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out > tfplan.txt'
+                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out'
                         // If plan exits with 0 (no changes) or 1 (error), we handle it here.
                         // If it exits with 2 (changes), the try-catch block will not execute this part.
                         env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
 
-                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'grep "Plan: " tfplan.txt', returnStdout: true).trim()
+                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'terraform show tfplan.out | grep "Plan: "', returnStdout: true).trim()
                         echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                     } catch (Exception e) {
                         // If terraform plan exits with 2 (changes), it will throw an exception in Jenkins,
