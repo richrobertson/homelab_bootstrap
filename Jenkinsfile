@@ -49,7 +49,7 @@ pipeline {
                         // We catch it and set a flag to indicate changes.
                         if (e.getMessage().contains("exit code 2")) {
                             env.TERRAFORM_PLAN_HAS_CHANGES = 'true'
-                            env.TERRAFORM_PLAN_SUMMARY = sh(script: 'echo "${env.TERRAFORM_PLAN_OUTPUT}" | grep "Plan: " ', returnStdout: true).trim()
+                            env.TERRAFORM_PLAN_SUMMARY = sh(script: 'echo "' + env.TERRAFORM_PLAN_OUTPUT ' +" | grep "Plan: " ', returnStdout: true).trim()
                             echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                         } else {
                             // Handle other errors or re-throw if it's a critical failure
