@@ -24,11 +24,15 @@ module "firewall_vms" {
       bridge = var.wan_network_bridge
       firewall = true
       vlan_tag = var.wan_network_vlan_tag
+      ip4_address = "192.168.${var.wan_network_vlan_tag}.2/24"
+      ip4_gateway = "192.168.${var.wan_network_vlan_tag}.1"
     },
     {
       bridge = var.lan_network_bridge
       firewall = true
       vlan_tag = null
+      ip4_address = "10.1.${var.wan_network_vlan_tag}.2/24"
+      ip4_gateway = "10.1.0.1"
     }
   ]
   cloud_image_id = "cephfs:import/${local.cloud_image_name}"

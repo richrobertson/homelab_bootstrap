@@ -18,6 +18,8 @@ variable "networks" {
   type = list(object({
     bridge = string
     firewall = bool
+    ip4_address  = string
+    ip4_gateway  = string
     vlan_tag      = string
   }))
 }
