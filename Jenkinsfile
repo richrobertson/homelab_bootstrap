@@ -6,6 +6,7 @@ pipeline {
         VAULT_SKIP_VERIFY     = true
         VAULT_ADDR            = 'https://vault.myrobertson.net:8200'
         VAULT_TOKEN           = credentials('vault_token')
+        TERRAFORM_PLAN_OUTPUT = ''
     }
     stages {
         stage('Git Checkout') {
