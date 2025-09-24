@@ -76,7 +76,7 @@ pipeline {
 
                     // Send a POST request to the GitHub API to add a comment
                     // Replace with your GitHub API endpoint and authentication details
-                    httpRequest url: "https://api.github.com/repos/richrobertson/homelab_bootstrap/pulls/${env.CHANGE_ID}/comments",
+                    httpRequest url: "https://api.github.com/repos/richrobertson/homelab_bootstrap/issues/${env.CHANGE_ID}/comments",
                                 httpMode: 'POST',
                                 contentType: 'APPLICATION_JSON',
                                 requestBody: JsonOutput.toJson([body: commentBody]),
