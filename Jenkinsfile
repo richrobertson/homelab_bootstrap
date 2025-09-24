@@ -71,7 +71,7 @@ pipeline {
                 script {
                     // Post the plan output as a comment on the PR
                     def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${env.TERRAFORM_PLAN_SUMMARY}\n```"
-                    githubPRComment(comment: githubPRMessage( content: comment_body ) )
+                    // githubPRComment(comment: githubPRMessage( content: comment_body ) )
                 }
             }
         }
