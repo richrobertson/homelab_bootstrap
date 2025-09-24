@@ -36,12 +36,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out'
+                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out > tfplan.txt'
                         // If plan exits with 0 (no changes) or 1 (error), we handle it here.
                         // If it exits with 2 (changes), the try-catch block will not execute this part.
                         env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
 
-                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'grep "Plan: " tfplan.out', returnStdout: true).trim()
+                        env.TERRAFORM_PLAN_SUMMARY = sh(script: 'grep "Plan: " tfplan.txt', returnStdout: true).trim()
                         echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                     } catch (Exception e) {
                         // If terraform plan exits with 2 (changes), it will throw an exception in Jenkins,
@@ -67,7 +67,7 @@ pipeline {
                 script {
                     // Post the plan output as a comment on the PR
                     def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${env.TERRAFORM_PLAN_SUMMARY}\n```"
-                    githubPRComment(comment: { content: comment_body } )
+                    githubPRComment(comment: gitHubPRMessage( content: comment_body ) )
                 }
             }
         }
