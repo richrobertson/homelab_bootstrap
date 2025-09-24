@@ -37,9 +37,9 @@ pipeline {
             steps {
                 script {
                     try {
-                        env.TERRAFORM_PLAN_OUTPUT = sh(script: 'cd terraform && terraform plan -input=false -detailed-exitcode -out=tfplan', returnStdout: true).trim()
+                        //sh(script: 'cd terraform && terraform plan -input=false -detailed-exitcode -out=tfplan', returnStdout: true).trim()
                     
-                        // sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out > plan_output.txt'
+                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out'
                         // If plan exits with 0 (no changes) or 1 (error), we handle it here.
                         // If it exits with 2 (changes), the try-catch block will not execute this part.
                         env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
@@ -50,6 +50,8 @@ pipeline {
                         // We catch it and set a flag to indicate changes.
                         if (e.getMessage().contains("exit code 2")) {
                             env.TERRAFORM_PLAN_HAS_CHANGES = 'true'
+                            sh 'cd terraform && terraform show -no-color tfplan > plan_output.txt'
+                            env.TERRAFORM_PLAN_OUTPUT = readFile('terraform/plan_output.txt').trim
                             env.TERRAFORM_PLAN_SUMMARY = sh(script: 'echo "' + env.TERRAFORM_PLAN_OUTPUT  + '" | grep "Plan: " ', returnStdout: true).trim()
                             echo "Terraform Plan Summary: ${env.TERRAFORM_PLAN_SUMMARY}"
                         } else {
