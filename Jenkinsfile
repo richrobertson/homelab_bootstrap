@@ -70,8 +70,16 @@ pipeline {
             steps {
                 script {
                     // Post the plan output as a comment on the PR
-                    def comment_body = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${env.TERRAFORM_PLAN_SUMMARY}\n```"
+                    def commentBody = "### Terraform Plan for branch `${env.BRANCH_NAME}`\n```\n${env.TERRAFORM_PLAN_SUMMARY}\n```"
                     // githubPRComment(comment: githubPRMessage( content: comment_body ) )
+
+                    // Send a POST request to the GitHub API to add a comment
+                    // Replace with your GitHub API endpoint and authentication details
+                    httpRequest url: "https://api.github.com/repos/richrobertson/homelab_bootstrap/pulls/${env.CHANGE_ID}/comments",
+                                httpMode: 'POST',
+                                contentType: 'APPLICATION_JSON',
+                                requestBody: JsonOutput.toJson([body: commentBody]),
+                                authentication: 'c74b96b5-fb04-49f3-ab91-aeea0bddca35'
                 }
             }
         }
