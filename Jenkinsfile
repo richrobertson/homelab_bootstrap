@@ -36,7 +36,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out' > 'plan_output.txt'
+                        sh 'cd terraform && terraform plan -detailed-exitcode -out=tfplan.out > plan_output.txt'
                         // If plan exits with 0 (no changes) or 1 (error), we handle it here.
                         // If it exits with 2 (changes), the try-catch block will not execute this part.
                         env.TERRAFORM_PLAN_HAS_CHANGES = 'false'
