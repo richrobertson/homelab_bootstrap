@@ -113,7 +113,7 @@ pipeline {
                 expression { return env.CHANGE_ID == null && env.TERRAFORM_PLAN_HAS_CHANGES == 'true' } 
             }
             steps {
-                sh 'cd terraform && terraform apply -input=false -auto-approve tfplan'
+                sh 'cd terraform && terraform apply -input=false -auto-approve tfplan.out'
             }
         }
     }
