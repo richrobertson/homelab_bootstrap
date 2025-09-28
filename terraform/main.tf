@@ -10,13 +10,13 @@ module "nodes" {
   proxmox_ve_nodes        = data.proxmox_virtual_environment_nodes.available_nodes.names
   network_bridge          = "vmbr1"
   network_vlan_id         = 20
-  control_plane_cpu_cores = 4
+  control_plane_cpu_cores = 8
   control_plane_memory_in_gb = 10
   control_plane_count = 5
 
   worker_count = 3
   worker_cpu_cores = 12
-  worker_memory_in_gb = 12
+  worker_memory_in_gb = 20
 
 }
 
