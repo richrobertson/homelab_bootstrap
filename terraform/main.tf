@@ -32,6 +32,64 @@ module "flux" {
   cluster_name = local.cluster_short_name
 }
 
+resource "vault_auth_backend" "kubernetes" {
+  type = "kubernetes"
+  path = "${local.cluster_short_name}-kubernetes"
+}
+
+resource "vault_kubernetes_auth_backend_config" "this" {
+  backend                = vault_auth_backend.kubernetes.path
+  kubernetes_host        = module.nodes.kubernetes_client_configuration.host
+  kubernetes_ca_cert     = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
+  disable_iss_validation = "true"
+  disable_local_ca_jwt  = "false"
+  issuer = module.nodes.kubernetes_client_configuration.host
+}
+
+ resource "vault_kubernetes_auth_backend_role" "vault-secrets-operator-role" {
+  backend            = vault_kubernetes_auth_backend_config.this.backend
+  role_name          = "vault-secrets-operator-role"
+  bound_service_account_names      = ["*"]
+  bound_service_account_namespaces  = ["*"]
+  token_policies = [ vault_policy.vault-secrets-operator-policy.name, "default" ]
+  audience = module.nodes.kubernetes_client_configuration.host
+}
+
+resource "vault_policy" "vault-secrets-operator-policy" {
+  name = "${local.cluster_short_name}-kubernetes"
+
+  policy = <<EOT
+
+path "auth/${local.cluster_short_name}-kubernetes/*" {
+  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+path "${local.cluster_short_name}-kubernetes/*" {
+  capabilities = ["update", "read", "list", "create", "delete", "sudo"]
+}
+
+path "secret/data/synology/*" {
+  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+
+EOT
+}
+
+
+resource "vault_kubernetes_secret_backend" "config" {
+  path                      = "${local.cluster_short_name}-kubernetes"
+  description               = "kubernetes secrets engine description"
+  kubernetes_host           = module.nodes.kubernetes_client_configuration.host
+  kubernetes_ca_cert        = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
+}
+
+resource "vault_kubernetes_secret_backend_role" "vault-secrets-operator-role" {
+  backend                       = vault_kubernetes_secret_backend.config.path
+  name                          = "vault-secrets-operator-role"
+  allowed_kubernetes_namespaces = ["*"]
+  service_account_name          = "default"
+} 
+
 module firewall {
   source = "./firewall"
   fw_count = 0
