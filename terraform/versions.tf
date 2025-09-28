@@ -8,6 +8,14 @@ terraform {
       source  = "bpg/proxmox"
       version = ">=0.83.2"
     }
+    github = {
+      source  = "integrations/github"
+      version = ">= 6.1"
+    }
+    flux = {
+      source  = "fluxcd/flux"
+      version = ">= 1.2"
+    }
   }
 
   backend "s3" {

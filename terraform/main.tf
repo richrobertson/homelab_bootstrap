@@ -11,7 +11,7 @@ module "nodes" {
   network_bridge          = "vmbr1"
   network_vlan_id         = 20
   control_plane_cpu_cores = 4
-  control_plane_memory_in_gb = 6
+  control_plane_memory_in_gb = 10
   control_plane_count = 5
 
   worker_count = 3
@@ -20,8 +20,37 @@ module "nodes" {
 
 }
 
+
+resource "time_sleep" "wait_60_seconds_for_nodes" {
+  depends_on = [module.nodes]
+
+  create_duration = "60s"
+}
+
+provider "flux" {
+  kubernetes = {
+    host                   = module.nodes.kubernetes_client_configuration.host
+    client_certificate     = base64decode(module.nodes.kubernetes_client_configuration.client_certificate)
+    client_key             = base64decode(module.nodes.kubernetes_client_configuration.client_key)
+    cluster_ca_certificate = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
+  }
+  git = {
+    url = "https://github.com/richrobertson/homelab_flux.git"
+    http = {
+      username = "git" # This can be any string when using a personal access token
+      password = data.vault_generic_secret.github_token.data["token"]
+    }
+  }
+}
+
+provider "github" {
+  owner = "richrobertson"
+  token = data.vault_generic_secret.github_token.data["token"]
+}
+
 module "flux" {
   source = "./flux"
+  depends_on = [time_sleep.wait_60_seconds_for_nodes]
   github_org = "richrobertson"
   github_repository = "homelab_flux"
   kubernets_cluster_endpoint = module.nodes.kubernetes_client_configuration.host
@@ -30,6 +59,11 @@ module "flux" {
   kubernets_cluster_ca_certificate = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
   github_token = data.vault_generic_secret.github_token.data["token"]
   cluster_name = local.cluster_short_name
+
+  providers = {
+    flux = flux
+    github = github
+  }
 }
 
 resource "vault_auth_backend" "kubernetes" {
@@ -72,6 +106,9 @@ path "secret/data/synology/*" {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
 }
 
+path "secret/data/proxmox/*" {
+  capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
 EOT
 }
 
