@@ -12,3 +12,8 @@ output "kubernetes_client_configuration" {
   value     = module.talos_cluster.kubernetes_client_configuration
   sensitive = true
 }
+
+output "cluster_endpoint" {
+  value     = module.talos_cluster.cluster_endpoint
+  sensitive = false
+}

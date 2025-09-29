@@ -68,16 +68,15 @@ resource "proxmox_virtual_environment_vm" "vm" {
   agent {
     # read 'Qemu guest agent' section, change to true only when ready
     enabled = true
-    timeout = "30s"
+    timeout = "90s"
   }
 
   disk {
     datastore_id = "p0"
-    interface    = "scsi0"
+    interface    = "virtio0"
     iothread     = true
-    cache        = "writethrough"
+    cache        = "none"
     discard      = "on"
-    ssd          = true
     file_format  = "raw"
 
     import_from  = var.cloud_image_id

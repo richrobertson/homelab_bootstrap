@@ -20,13 +20,6 @@ module "nodes" {
 
 }
 
-
-resource "time_sleep" "wait_60_seconds_for_nodes" {
-  depends_on = [module.nodes]
-
-  create_duration = "60s"
-}
-
 provider "flux" {
   kubernetes = {
     host                   = module.nodes.kubernetes_client_configuration.host
@@ -50,7 +43,7 @@ provider "github" {
 
 module "flux" {
   source = "./flux"
-  depends_on = [time_sleep.wait_60_seconds_for_nodes]
+  depends_on = [module.nodes]
   github_org = "richrobertson"
   github_repository = "homelab_flux"
   kubernets_cluster_endpoint = module.nodes.kubernetes_client_configuration.host
@@ -77,7 +70,7 @@ resource "vault_kubernetes_auth_backend_config" "this" {
   kubernetes_ca_cert     = base64decode(module.nodes.kubernetes_client_configuration.ca_certificate)
   disable_iss_validation = "true"
   disable_local_ca_jwt  = "false"
-  issuer = module.nodes.kubernetes_client_configuration.host
+  issuer = module.nodes.cluster_endpoint
 }
 
  resource "vault_kubernetes_auth_backend_role" "vault-secrets-operator-role" {
@@ -86,7 +79,7 @@ resource "vault_kubernetes_auth_backend_config" "this" {
   bound_service_account_names      = ["*"]
   bound_service_account_namespaces  = ["*"]
   token_policies = [ vault_policy.vault-secrets-operator-policy.name, "default" ]
-  audience = module.nodes.kubernetes_client_configuration.host
+  audience = module.nodes.cluster_endpoint
 }
 
 resource "vault_policy" "vault-secrets-operator-policy" {

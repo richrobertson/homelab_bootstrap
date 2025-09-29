@@ -12,3 +12,8 @@ output "kubernetes_client_configuration" {
   value     = talos_cluster_kubeconfig.this.kubernetes_client_configuration
   sensitive = true
 }
+
+output "cluster_endpoint" {
+  value     = local.cluster_endpoint
+  sensitive = false
+}

@@ -65,7 +65,7 @@ module "talos_cluster" {
   depends_on = [ module.worker_vms, module.control_plane_vms ]
   source = "../modules/talos"
   cluster_name     = var.cluster_short_name
-  cluster_endpoint = "https://192.168.${var.network_vlan_id}.10:6443"
+  control_plane_virtual_ip = "192.168.${var.network_vlan_id}.9"
   node_data = {
     controlplanes = {
       for idx in range(var.control_plane_count) :

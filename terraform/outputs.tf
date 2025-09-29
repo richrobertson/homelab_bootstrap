@@ -1,5 +1,5 @@
 output "talosconfig" {
-  value     = module.nodes
+  value     = module.nodes.talosconfig
   sensitive = true
 }
 
