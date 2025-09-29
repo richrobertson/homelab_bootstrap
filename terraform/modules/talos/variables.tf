@@ -3,12 +3,6 @@ variable "cluster_name" {
   type        = string
 }
 
-variable "control_plane_virtual_ip" {
-  description = "The virtual IP for the control plane"
-  type        = string
-  
-}
-
 variable "node_data" {
   description = "A map of node data"
   type = object({

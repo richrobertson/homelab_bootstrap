@@ -1,5 +1,5 @@
 locals {
-  cluster_endpoint = "https://${var.control_plane_virtual_ip}:6443"
+  cluster_endpoint = "https://cp.${var.cluster_name}.myrobertson.net:6443"
 }
 
 resource "talos_machine_secrets" "this" {}
@@ -33,9 +33,6 @@ resource "talos_machine_configuration_apply" "controlplane" {
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
       hostname     = each.value.hostname == null ? format("%s-cp-%s", var.cluster_name, index(keys(var.node_data.controlplanes), each.key)) : each.value.hostname
       install_disk = each.value.install_disk
-    }),
-    templatefile("${path.module}/templates/virtual_ip.yaml.tmpl", {
-      virtual_ip   = var.control_plane_virtual_ip
     }),
     file("${path.module}/files/cp-scheduling.yaml"),
     file("${path.module}/files/metrics-server.yaml"),
