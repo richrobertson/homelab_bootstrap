@@ -75,7 +75,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
     datastore_id = "p0"
     interface    = "virtio0"
     iothread     = true
-    cache        = "none"
+    cache        = "writeback"
     discard      = "on"
     file_format  = "raw"
 
