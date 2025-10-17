@@ -11,53 +11,52 @@ terraform {
 
 locals {
   snippets_datastore_id = "cephfs"
-  default_packages      = concat(["qemu-guest-agent", "net-tools", "curl"], var.ansible_playbook_name == "" ? [] : ["ansible"])
-  final_packages        = concat(local.default_packages, var.additional_packages)
-  default_run_cmds      = ["systemctl enable qemu-guest-agent", "systemctl start qemu-guest-agent"]
-  final_run_cmds        = concat(local.default_run_cmds, var.additional_runcmds, ["echo \"done\" > /tmp/cloud-config.done"])
-  ansible               = var.ansible_playbook_name == "" ? "" : <<-EOF
-    ansible:
-      package_name: ansible-core
-      install_method: distro
-      pull:
-        url: "https://${var.github_token}:x-oauth-basic@github.com/richrobertson/homelab_ansible.git"
-        playbook_name: ${var.ansible_playbook_name}   
-    EOF
 }
 
 resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
   content_type = "snippets"
   datastore_id = local.snippets_datastore_id
   node_name    = var.node_name
+  overwrite    = true
 
   source_raw {
     data = <<-EOF
     #cloud-config
-    hostname: ${var.name}
     timezone: America/Los_Angeles
-    users:
-      - name: root
-        lock-passwd: false
-        passwd: $1$SaltSalt$YhgRYajLPrYevs14poKBQ0
-      - default
-      - name: rich
-        groups:
-          - sudo
-        shell: /bin/bash
-        ssh_authorized_keys:
-          - ${trimspace(var.ssh_public_key)}
-        sudo: ALL=(ALL) NOPASSWD:ALL
-    package_update: true
-    package_upgrade: true
-    packages:
-    ${yamlencode(local.final_packages)}
-    runcmd:
-    ${yamlencode(local.final_run_cmds)} 
+    ca_certs:
+      remove_defaults: false
+      trusted:
+      - |
+        -----BEGIN CERTIFICATE-----
+        MIIDkTCCAnmgAwIBAgIQbF/+UropyJJDIybKYxHWGjANBgkqhkiG9w0BAQsFADBP
+        MRMwEQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRz
+        b24xGzAZBgNVBAMTEm15cm9iZXJ0c29uLURDMS1DQTAeFw0yNTEwMDgxNjA4NDNa
+        Fw0zMDEwMDgxNjE4NDJaME8xEzARBgoJkiaJk/IsZAEZFgNuZXQxGzAZBgoJkiaJ
+        k/IsZAEZFgtteXJvYmVydHNvbjEbMBkGA1UEAxMSbXlyb2JlcnRzb24tREMxLUNB
+        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuywOllpF0hUOy/wtCPZL
+        s8AMujvYEzaKoDoVYHyTH4KozAVAnuQwoBFvSs5Vzhh3RXyde4vV8kYP3dRLU3H8
+        o3MB6g0CkB/229r6QBjkeHUdqC9iViRID6Ayyiw8Y0/WtI4HoF+NYEsSVxcIdg3d
+        Smq1iC/vNhCnnrhydlmHya4B823/5SEvVAAzHmFi5KlebtQinN3tbEpnf3T2KdSq
+        zHk8JJtCiloWMVI/2MLYr6PvBnA72DooeZ5ZV2x5185R/Vsd4q5D8HUPXjDnVG+7
+        BUEh9A9bblJqmAN6CdC0JyY6G4+jVv0Ex8NfA/9OsAqJA/QPfxEiQ7NFIMONAVeI
+        NQIDAQABo2kwZzATBgkrBgEEAYI3FAIEBh4EAEMAQTAOBgNVHQ8BAf8EBAMCAYYw
+        DwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUsZJHlspjMaonYzRUZ3pH9q51guMw
+        EAYJKwYBBAGCNxUBBAMCAQAwDQYJKoZIhvcNAQELBQADggEBAB0OQSSsBgtYcfLJ
+        l1HS2a2Wplrvms09Cyqc0dKZDDjPdC4VM0UyektRui5/qo5nERASfs3nz491ex1u
+        ZFzpw3Kf/aUgnaQIZzKKQrU4alEFGTJhJQv4QSE5wiO1asHlFa/Z8Nw4ViHm1Rlg
+        lTtlJRY0XW2vbSOpJCiOAU/ZS6MIF3kqJlTitgsWNT8rO+p6Oy6PX22jwh1Foa8i
+        x03+h2L3BR4ZDHMTIauMsoyyWhE0FSK6icvMyQoasZ+Oi0NHhLL7JYsgECxl8af+
+        EXtMCwioMHky8ZQXMcfHdSKMoH6HiyW4aAkv6z7VgRzRH85xUpo0VbHo+pQ1K190
+        S30eyiw=
+        -----END CERTIFICATE----
     EOF
 
     file_name = "user-data-cloud-config-${var.name}.yaml"
   }
 }
+
+
+
 
 resource "proxmox_virtual_environment_vm" "vm" {
   name = var.name
@@ -80,22 +79,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   cdrom {
-    file_id   = "none"
-    interface = "ide0"
-  }
-
-  serial_device {
-
-  }
-
-  vga {
-    type = var.display_type
+    file_id = "none"
   }
 
   initialization {
+    user_data_file_id = var.skip_user_data_file ? null : proxmox_virtual_environment_file.user_data_cloud_config.id
 
     datastore_id = "p0"
-    interface    = "scsi0"
+    interface    = "ide0"
     dns {
       domain  = var.dns.domain
       servers = var.dns.servers
@@ -113,8 +104,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
         }
       }
     }
-
-    user_data_file_id = var.skip_user_data_file ? null : proxmox_virtual_environment_file.user_data_cloud_config.id
   }
 
   dynamic "network_device" {
@@ -133,6 +122,8 @@ resource "proxmox_virtual_environment_vm" "vm" {
     timeout = "100s"
   }
 
+
+
   disk {
     datastore_id = "p0"
     interface    = "virtio0"
@@ -143,10 +134,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
     import_from = var.cloud_image_id
     size        = var.disk_size
-  }
-
-  lifecycle {
-    ignore_changes = [disk[0].import_from]
   }
 
 }

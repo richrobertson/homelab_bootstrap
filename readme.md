@@ -13,4 +13,4 @@ terraform apply -auto-approve
 
 terraform output -raw kubeconfig > ~/.kube/config
 
-terraform output -raw talosconfig > ~/.kube/config
+terraform output -raw talosconfig > ~/.talos/config

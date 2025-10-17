@@ -16,19 +16,24 @@ terraform {
       source  = "fluxcd/flux"
       version = ">= 1.2"
     }
+    dns = {
+      source  = "hashicorp/dns"
+      version = ">=3.4.3"
+    }
+    vault = {
+      source  = "hashicorp/vault"
+      version = ">=5.3.0"
+    }
+    powerdns = {
+      source  = "pan-net/powerdns"
+      version = ">=1.5.0"
+    }
+
   }
 
   backend "s3" {
     bucket = "myrobertson-homelab-terraform"
     region = "us-west-2"
-    key = "base/terraform.tfstate"
+    key    = "base/terraform.tfstate"
   }
 }
-
-provider "proxmox" {
-  endpoint  = "https://cl0.myrobertson.net:8006/api2/json"
-  api_token = data.vault_generic_secret.proxmox_token.data["api_token"]
-  insecure  = true
-}
-
-provider "talos" {}

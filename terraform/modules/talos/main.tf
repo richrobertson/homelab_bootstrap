@@ -21,57 +21,81 @@ data "talos_machine_configuration" "worker" {
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = talos_machine_secrets.this.client_configuration
-  endpoints            = [for k, v in var.node_data.controlplanes : k]
+  endpoints            = concat([for k, v in var.node_data.controlplanes : v.hostname], [local.cluster_endpoint])
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
   for_each                    = var.node_data.controlplanes
-  node                        = each.key
+  node                        = each.value.ip4_address
   config_patches = [
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname     = each.value.hostname == null ? format("%s-cp-%s", var.cluster_name, index(keys(var.node_data.controlplanes), each.key)) : each.value.hostname
+      hostname     = each.value.hostname
       install_disk = each.value.install_disk
     }),
-    file("${path.module}/files/cp-scheduling.yaml"),
+    file("${path.module}/files/root-ca.yaml"),
+    templatefile("${path.module}/templates/cp-scheduling.yaml.tmpl", {
+      environment_name     = var.cluster_name
+    }),
     file("${path.module}/files/metrics-server.yaml"),
     file("${path.module}/files/rotate-server-certificates.yaml"),
   ]
+  timeouts = {
+    create = "30s"
+    delete = "30s"
+    update = "30s"
+  }
 }
 
 resource "talos_machine_configuration_apply" "worker" {
+  depends_on                  = [talos_machine_configuration_apply.controlplane]
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
   for_each                    = var.node_data.workers
-  node                        = each.key
+  node                        = each.value.ip4_address
   config_patches = [
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname     = each.value.hostname == null ? format("%s-worker-%s", var.cluster_name, index(keys(var.node_data.workers), each.key)) : each.value.hostname
+      hostname     = each.value.hostname
       install_disk = each.value.install_disk
     }),
+    file("${path.module}/files/root-ca.yaml"),
     file("${path.module}/files/rotate-server-certificates.yaml"),
   ]
+  timeouts = {
+    create = "30s"
+    delete = "30s"
+    update = "30s"
+  }
 }
 
+
+resource "time_sleep" "wait_30_seconds" {
+  depends_on      = [talos_machine_configuration_apply.worker, talos_machine_configuration_apply.controlplane]
+  create_duration = "20s"
+}
+
+
 resource "talos_machine_bootstrap" "this" {
-  depends_on = [talos_machine_configuration_apply.controlplane]
+
+  depends_on = [ time_sleep.wait_30_seconds ]
 
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = [for k, v in var.node_data.controlplanes : k][0]
+  node                 = [for k, v in var.node_data.controlplanes : v.ip4_address][0]
 }
 
 data "talos_cluster_health" "health" {
-  depends_on           = [ talos_machine_configuration_apply.controlplane, talos_machine_configuration_apply.worker ]
+  depends_on           = [ talos_machine_bootstrap.this ]
   client_configuration = data.talos_client_configuration.this.client_configuration
-  control_plane_nodes  = [for k, v in var.node_data.controlplanes : k]
-  worker_nodes         = [for k, v in var.node_data.workers : k]
-  endpoints            = data.talos_client_configuration.this.endpoints
+  control_plane_nodes  = [for k, v in var.node_data.controlplanes : v.ip4_address]
+  worker_nodes = [for k, v in var.node_data.workers : v.ip4_address]
+  endpoints            = [for k, v in var.node_data.controlplanes : v.ip4_address]
+  skip_kubernetes_checks = true
 }
 
 
 resource "talos_cluster_kubeconfig" "this" {
-  depends_on           = [talos_machine_bootstrap.this, data.talos_cluster_health.health]
+  depends_on           = [talos_machine_bootstrap.this]
   client_configuration = talos_machine_secrets.this.client_configuration
-  node                 = [for k, v in var.node_data.controlplanes : k][0]
+  node                 = [for k, v in var.node_data.controlplanes : v.ip4_address][0]
 }
