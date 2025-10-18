@@ -6,13 +6,13 @@ locals {
     }
   }
 
-  dns_server = local.env.environment_name == "production" ?  module.substrate.subns_server.hostname : "subns.myrobertson.net"
-  subns_server = local.env.environment_name == "production" ?  module.substrate.subns_server : {
+  dns_server = local.env.environment_name == "production" ?  module.substrate[0].subns_server.hostname : "subns.myrobertson.net"
+  subns_server = local.env.environment_name == "production" ?  module.substrate[0].subns_server : {
     ipv4_addresses = ["192.168.7.201"]
     ipv6_addresses = []
     hostname       = "subns.myrobertson.net"
   }
-  recurse_dns_server = local.env.environment_name == "production" ?  module.substrate.nsr_server: {
+  recurse_dns_server = local.env.environment_name == "production" ?  module.substrate[0].nsr_server: {
     ipv4_addresses = ["192.168.7.202"]
     ipv6_addresses = []
     hostname       = "ns1.myrobertson.net"
@@ -28,7 +28,7 @@ module "substrate" {
 
 
 module "networking" {
-  count                  = 1
+  count                  = 0
   source                 = "./networking"
   depends_on             = [module.substrate]
   environment_name       = local.env.environment_name
@@ -42,7 +42,7 @@ module "networking" {
 }
 
 module "kubernetes-cluster" {
-  count      = 1
+  count      = 0
   source     = "./kubernetes"
   depends_on = [module.networking]
 
@@ -63,7 +63,7 @@ module "kubernetes-cluster" {
 
 
 module "flux" {
-  count      = 1
+  count      = 0
   source     = "./modules/flux"
   depends_on = [module.kubernetes-cluster]
 
