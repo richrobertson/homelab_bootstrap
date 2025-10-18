@@ -28,14 +28,17 @@ module "substrate" {
 
 
 module "networking" {
-  count                  = 0
+  count                  = 1
   source                 = "./networking"
   depends_on             = [module.substrate]
   environment_name       = local.env.environment_name
   environment_short_name = local.env.environment_short_name
   fault_domains          = local.fault_domains
   dns_server             = local.dns_server
-
+  vrf_vxlan              = local.env["vrf_vxlan"]
+  dataplane_vlan_tag     = local.env["dataplane_vlan_tag"]
+  controlplane_vlan_tag    = local.env[ "controlplane_vlan_tag"]
+  vxlan_octet = local.env["vxlan_octet"]
   nodes = data.proxmox_virtual_environment_nodes.available_nodes.names
   #node_ips = data.proxmox_virtual_environment_nodes.available_nodes.
 

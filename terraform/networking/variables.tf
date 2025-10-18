@@ -21,3 +21,21 @@ variable "environment_short_name" {
 variable "dns_server" {
   type = string
 }
+
+variable "vrf_vxlan" {
+  type = number
+} 
+
+variable "dataplane_vlan_tag" {
+  description = "VLAN tag for the dataplane network"
+  type        = number
+}
+variable "controlplane_vlan_tag" {
+  description = "VLAN tag for the controlplane network"
+  type        = number
+}
+
+variable "vxlan_octet" {
+  description = "Map of octets for VXLAN subnets"
+  type        = map(number)
+}

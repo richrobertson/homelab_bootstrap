@@ -23,11 +23,6 @@ locals {
   evpn_controller  = "pve"
   ipam             = "netbox"
   reverse_dns_zone = "10.in-addr.arpa"
-  octet = {
-    "controlplane" = 20
-    "dataplane"    = 21
-    "metallb"      = 22
-  }
 }
 
 module "dns_zone" {
@@ -57,7 +52,7 @@ resource "proxmox_virtual_environment_sdn_zone_evpn" "l3_network" {
   id         = "${var.environment_short_name}l3"
   nodes      = var.nodes
   controller = local.evpn_controller
-  vrf_vxlan  = 4000
+  vrf_vxlan  = var.vrf_vxlan
 
   # Optional attributes
   advertise_subnets          = true
@@ -78,7 +73,7 @@ resource "proxmox_virtual_environment_sdn_zone_evpn" "l3_network" {
 resource "proxmox_virtual_environment_sdn_vnet" "controlplane" {
   id   = "${var.environment_short_name}ctr"
   zone = proxmox_virtual_environment_sdn_zone_evpn.l3_network.id
-  tag  = 1000
+  tag  = var.controlplane_vlan_tag
 
   depends_on = [
     proxmox_virtual_environment_sdn_applier.finalizer
@@ -87,9 +82,9 @@ resource "proxmox_virtual_environment_sdn_vnet" "controlplane" {
 
 resource "proxmox_virtual_environment_sdn_subnet" "controlplane_subnets" {
   for_each        = var.fault_domains
-  cidr            = "10.${local.octet["controlplane"]}.${each.value.id}.0/24"
+  cidr            = "10.${var.vxlan_octet["controlplane"]}.${each.value.id}.0/24"
   vnet            = proxmox_virtual_environment_sdn_vnet.controlplane.id
-  gateway         = "10.${local.octet["controlplane"]}.${each.value.id}.1"
+  gateway         = "10.${var.vxlan_octet["controlplane"]}.${each.value.id}.1"
   dns_zone_prefix = "cp.${each.key}"
 
   snat = false
@@ -102,7 +97,7 @@ resource "proxmox_virtual_environment_sdn_subnet" "controlplane_subnets" {
 resource "proxmox_virtual_environment_sdn_vnet" "dataplane" {
   id   = "${var.environment_short_name}data"
   zone = proxmox_virtual_environment_sdn_zone_evpn.l3_network.id
-  tag  = 2000
+  tag  = var.dataplane_vlan_tag
 
   depends_on = [
     proxmox_virtual_environment_sdn_applier.finalizer
@@ -110,9 +105,9 @@ resource "proxmox_virtual_environment_sdn_vnet" "dataplane" {
 }
 
 # resource "proxmox_virtual_environment_sdn_subnet" "dataplane_metallb_subnet" {
-#   cidr    = "10.${local.octet["metallb"]}.0.0/24"
+#   cidr    = "10.${var.vxlan_octet["metallb"]}.0.0/24"
 #   vnet    = proxmox_virtual_environment_sdn_vnet.dataplane.id
-#   gateway = "10.${local.octet["metallb"]}.0.1"
+#   gateway = "10.${var.vxlan_octet["metallb"]}.0.1"
 
 #   depends_on = [
 #     proxmox_virtual_environment_sdn_vnet.dataplane,
@@ -122,9 +117,9 @@ resource "proxmox_virtual_environment_sdn_vnet" "dataplane" {
 
 resource "proxmox_virtual_environment_sdn_subnet" "dataplane_subnets" {
   for_each        = var.fault_domains
-  cidr            = "10.${local.octet["dataplane"]}.${each.value.id}.0/24"
+  cidr            = "10.${var.vxlan_octet["dataplane"]}.${each.value.id}.0/24"
   vnet            = proxmox_virtual_environment_sdn_vnet.dataplane.id
-  gateway         = "10.${local.octet["dataplane"]}.${each.value.id}.1"
+  gateway         = "10.${var.vxlan_octet["dataplane"]}.${each.value.id}.1"
   dns_zone_prefix = "dp.${each.key}"
 
   snat = false
