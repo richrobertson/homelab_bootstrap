@@ -3,10 +3,10 @@ locals {
 
   envs = {
     "production" = {
-        environment_name = "production"
+        environment_name = "prod"
         environment_short_name = "prod"
         kubernetes = {
-            cluster_name = "production"
+            cluster_name = "prod"
         }
         vrf_vxlan = 4050
         controlplane_vlan_tag = 1050
@@ -15,6 +15,17 @@ locals {
             "controlplane" = 30
             "dataplane"    = 31
             "metallb"      = 32
+        }
+
+        kubernetes_nodes = {
+            controlplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
+            dataplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
         }
     }
     "staging" = {
@@ -32,6 +43,17 @@ locals {
             "dataplane"    = 21
             "metallb"      = 22
         }
+
+        kubernetes_nodes = {
+            controlplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
+            dataplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
+        }
     }
     "default" = {
         environment_name = "development"
@@ -47,6 +69,17 @@ locals {
             "controlplane" = 10
             "dataplane"    = 11
             "metallb"      = 12
+        }
+
+        kubernetes_nodes = {
+            controlplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
+            dataplane = {
+                cpu_cores    = 8
+                memory_in_gb = 8
+            }
         }
     }      
   }

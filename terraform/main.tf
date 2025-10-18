@@ -6,13 +6,13 @@ locals {
     }
   }
 
-  dns_server = local.env.environment_name == "production" ?  module.substrate[0].subns_server.hostname : "subns.myrobertson.net"
-  subns_server = local.env.environment_name == "production" ?  module.substrate[0].subns_server : {
+  dns_server = local.env.environment_name == "prod" ?  module.substrate[0].subns_server.hostname : "subns.myrobertson.net"
+  subns_server = local.env.environment_name == "prod" ?  module.substrate[0].subns_server : {
     ipv4_addresses = ["192.168.7.201"]
     ipv6_addresses = []
     hostname       = "subns.myrobertson.net"
   }
-  recurse_dns_server = local.env.environment_name == "production" ?  module.substrate[0].nsr_server: {
+  recurse_dns_server = local.env.environment_name == "prod" ?  module.substrate[0].nsr_server: {
     ipv4_addresses = ["192.168.7.202"]
     ipv6_addresses = []
     hostname       = "ns1.myrobertson.net"
@@ -20,7 +20,7 @@ locals {
 }
 
 module "substrate" {
-  count        = local.env.environment_name == "production" ? 1 : 0
+  count        = local.env.environment_name == "prod" ? 1 : 0
   source       = "./substrate"
   github_token = data.vault_generic_secret.github_token.data["token"]
   db1_password = data.vault_generic_secret.substrate_db1.data["postgres_password"]
@@ -45,7 +45,7 @@ module "networking" {
 }
 
 module "kubernetes-cluster" {
-  count      = 0
+  count      = 1
   source     = "./kubernetes"
   depends_on = [module.networking]
 
@@ -62,6 +62,9 @@ module "kubernetes-cluster" {
   dns_auth_sever = local.subns_server
   dns_server = local.recurse_dns_server
   proxmox_ve_nodes = data.proxmox_virtual_environment_nodes.available_nodes.names
+
+
+  kubernetes_nodes_resources = local.env.kubernetes_nodes
 }
 
 

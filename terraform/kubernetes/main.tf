@@ -16,12 +16,12 @@ module "nodes" {
   }
 
   control_plane_network_bridge = var.control_plane_network_bridge
-  control_plane_cpu_cores      = 12
-  control_plane_memory_in_gb   = 12
+  control_plane_cpu_cores      = var.kubernetes_nodes_resources["controlplane"].cpu_cores
+  control_plane_memory_in_gb   = var.kubernetes_nodes_resources["controlplane"].memory_in_gb
   control_plane_subnets_by_fd  = var.control_plane_subnets_by_fd
 
-  worker_cpu_cores      = 12
-  worker_memory_in_gb   = 20
+  worker_cpu_cores      = var.kubernetes_nodes_resources["dataplane"].cpu_cores
+  worker_memory_in_gb   = var.kubernetes_nodes_resources["dataplane"].memory_in_gb
   worker_network_bridge = var.worker_network_bridge
   worker_subnets_by_fd  = var.worker_subnets_by_fd
 }
