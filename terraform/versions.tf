@@ -2,7 +2,7 @@ terraform {
   required_providers {
     talos = {
       source  = "siderolabs/talos"
-      version = "0.9.0-alpha.0"
+      version = "0.9.0"
     }
     proxmox = {
       source  = "bpg/proxmox"
@@ -28,7 +28,9 @@ terraform {
       source  = "pan-net/powerdns"
       version = ">=1.5.0"
     }
-
+    microsoftadcs = {
+      source = "registry.terraform.io/flipyap/microsoft-adcs"
+    }
   }
 
   backend "s3" {

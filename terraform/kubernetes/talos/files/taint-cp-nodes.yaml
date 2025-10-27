@@ -1,0 +1,8 @@
+machine:
+  kubelet:
+    extraConfig:
+      registerNode: true
+      registerWithTaints:
+        - effect: NoSchedule
+          key: node.kubernetes.io/assignment
+          value: infra

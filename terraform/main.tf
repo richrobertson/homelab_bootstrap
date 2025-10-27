@@ -69,7 +69,7 @@ module "kubernetes-cluster" {
 
 
 module "flux" {
-  count      = 0
+  count      = 1
   source     = "./modules/flux"
   depends_on = [module.kubernetes-cluster]
 

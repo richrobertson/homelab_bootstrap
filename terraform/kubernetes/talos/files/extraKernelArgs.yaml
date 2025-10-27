@@ -1,0 +1,14 @@
+
+machine:
+  logging:
+    destinations:
+      - endpoint: "udp://192.168.7.5:5045/"
+        format: "json_lines" 
+      - endpoint: "tcp://192.168.7.5:5044/"
+        format: "json_lines"  
+      
+  install:
+    extraKernelArgs:
+      - "cpufreq.default_governor=performance"
+      - "intel_idle.max_cstate=0"
+      - talos.logging.kernel=tcp://192.168.7.5:5044/

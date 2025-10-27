@@ -91,3 +91,8 @@ variable "ha_enabled" {
   type    = bool
   default = false
 }
+
+variable "protect_from_destroy" {
+  type    = bool
+  default = false
+}

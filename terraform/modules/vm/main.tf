@@ -146,8 +146,10 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   lifecycle {
-    ignore_changes = [disk[0].import_from,
-                      initialization[0].user_data_file_id]
+    ignore_changes = [
+      disk[0].import_from,
+      initialization[0].user_data_file_id,
+      cpu[0].units]
   }
 
 }
@@ -157,4 +159,7 @@ resource "proxmox_virtual_environment_haresource" "vm" {
   resource_id = "vm:${proxmox_virtual_environment_vm.vm.vm_id}"
   state       = "started"
   comment     = "Managed by Terraform"
+  lifecycle {
+    ignore_changes = [ comment ]
+  }
 }

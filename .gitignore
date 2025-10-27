@@ -4,3 +4,4 @@ terraform/s3.json
 **/terraform.tfstate
 **/.DS_Store
 .DS_Store
+cluster_configs

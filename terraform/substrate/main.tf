@@ -43,16 +43,17 @@ module "database" {
   cloud_image_id    = proxmox_virtual_environment_download_file.cloud_image.id
 }
 
-module "powerdns_auth_server" {
-  source         = "./powerdns-auth"
+module "powerdns_recurse_server" {
+  source         = "./powerdns-recurse"
   depends_on     = [module.database]
   ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOWOeC6oOqvDBnVpY+DU8h78cXVd2EiE6NhrCthKsm7/ rich@myrobertson.com"
   cloud_image_id = proxmox_virtual_environment_download_file.cloud_image_old.id
 }
 
-module "powerdns_recurse_server" {
-  source         = "./powerdns-recurse"
-  depends_on     = [module.database]
+
+module "powerdns_auth_server" {
+  source         = "./powerdns-auth"
+  depends_on     = [module.powerdns_recurse_server]
   ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOWOeC6oOqvDBnVpY+DU8h78cXVd2EiE6NhrCthKsm7/ rich@myrobertson.com"
   cloud_image_id = proxmox_virtual_environment_download_file.cloud_image_old.id
 }

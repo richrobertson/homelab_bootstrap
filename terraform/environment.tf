@@ -51,7 +51,7 @@ locals {
             }
             dataplane = {
                 cpu_cores    = 8
-                memory_in_gb = 8
+                memory_in_gb = 16
             }
         }
     }

@@ -18,3 +18,7 @@ variable "node_data" {
     }))
   })
 }
+
+variable "vault_pki_secret_backend_path" {
+  type        = string
+}

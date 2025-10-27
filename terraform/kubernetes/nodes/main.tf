@@ -30,7 +30,7 @@ module "control_plane_subnet_domains" {
 
 module "control_plane_vms" {
   depends_on          = [module.control_plane_subnet_domains]
-  source              = "../../modules/talos_vm"
+  source              = "../talos_vm"
   for_each            = var.fault_domains
   skip_user_data_file = false
   name                = "k8s-${var.cluster_short_name}-cp-${each.value.id}"
@@ -110,7 +110,8 @@ module "data_plane_subnet_domains" {
 }
 
 module "worker_vms" {
-  source   = "../../modules/talos_vm"
+  depends_on = [ module.data_plane_subnet_domains, module.control_plane_vms ]
+  source   = "../talos_vm"
   for_each = var.fault_domains
 
   name         = "k8s-${var.cluster_short_name}-worker-${each.value.id}"
@@ -124,13 +125,6 @@ module "worker_vms" {
       vlan_tag    = null
       ip4_address = "${cidrhost(var.worker_subnets_by_fd[each.key].cidr, 2)}/24"
       ip4_gateway = cidrhost(var.worker_subnets_by_fd[each.key].cidr, 1)
-    },
-    {
-      bridge      = "vmbr1"
-      firewall    = false
-      vlan_tag    = 7
-      ip4_address = "192.168.7.${240 + each.value.id}/24"
-      ip4_gateway = ""
     }
   ]
   display_type   = "std"
@@ -178,8 +172,4 @@ module "data_plane_host_records" {
 #   }
 # }
 
-resource "time_sleep" "wait_30_seconds" {
-  depends_on      = [module.worker_vms, module.control_plane_vms, module.control_plane_subdomain_https, module.control_plane_host_records, module.data_plane_host_records]
-  create_duration = "30s"
-}
 

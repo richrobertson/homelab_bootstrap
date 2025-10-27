@@ -11,6 +11,10 @@ terraform apply -auto-approve
 
 ## Update local kubernetes context
 
-terraform output -raw kubeconfig > ~/.kube/config
+### STAGE
+terraform output -raw kubeconfig > ~/.kube/config.stage
+terraform output -raw talosconfig > ~/.talos/config.stage
 
-terraform output -raw talosconfig > ~/.talos/config
+### PROD
+terraform output -raw kubeconfig > ~/.kube/config.prod
+terraform output -raw talosconfig > ~/.talos/config.prod
