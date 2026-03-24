@@ -1,6 +1,14 @@
-# Basic Terraform Example
+# Talos Module
 
-This example will create a basic Talos cluster using local machines.
+Manages reusable Talos cluster bootstrap resources and related configuration outputs. Provisions a Talos cluster using pre-booted machines in maintenance mode.
+
+## What This Manages
+
+- Reusable Talos cluster bootstrap resources, machine configuration application, and config outputs.
+
+## When To Edit
+
+- Update Talos bootstrap sequencing, node configuration rendering, or module I/O contracts.
 
 ## Prereqs
 
@@ -18,6 +26,12 @@ If different configurations are required, override them through command line wit
 Destroying the cluster should, again, be a simple `terraform destroy`.
 
 Getting the kubeconfig and talosconfig for this cluster can be done with `terraform output -raw kubeconfig > <desired-path-and-filename>` and `terraform output -raw talosconfig > <desired-path-and-filename>`.
+
+## Navigation
+
+- [Reusable Modules Index](../README.md)
+- [Terraform Index](../../README.md)
+- [Kubernetes Talos Module](../../kubernetes/talos/README.md)
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
