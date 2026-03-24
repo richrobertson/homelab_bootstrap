@@ -34,16 +34,14 @@ variable "control_plane_network_bridge" {
 }
 
 variable "control_plane_network_vlan_id" {
-  type    = number
-  default = null
+  type = number
 }
 
 variable "worker_network_bridge" {
   type = string
 }
 variable "worker_network_vlan_id" {
-  type    = number
-  default = null
+  type = number
 }
 
 

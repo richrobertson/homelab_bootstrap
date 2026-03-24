@@ -21,6 +21,9 @@ variable "fault_domains" {
 variable "control_plane_network_bridge" {
   type = string
 }
+variable "control_plane_network_vlan_id" {
+  type = number
+}
 variable "control_plane_subnets_by_fd" {
   type = map(object({
     cidr = string
@@ -30,8 +33,7 @@ variable "worker_network_bridge" {
   type = string
 }
 variable "worker_network_vlan_id" {
-  type    = number
-  default = null
+  type = number
 }
 
 variable "worker_subnets_by_fd" {

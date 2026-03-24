@@ -15,7 +15,7 @@ ephemeral "vault_kv_secret_v2" "db_secret" {
 
 # Enable database secrets engine
 resource "vault_mount" "db" {
-  path = "postgres"
+  path = var.vault_mount_path
   type = "database"
 }
 

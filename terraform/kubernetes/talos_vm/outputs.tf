@@ -1,5 +1,5 @@
 output "ipv4_addresses" {
-  value = [for ipv4 in flatten([for ip in proxmox_virtual_environment_vm.vm.ipv4_addresses : ip]) : ipv4 if !startswith(ipv4, "169") && !startswith(ipv4, "127")]
+  value = [for ipv4 in flatten([for ip in proxmox_virtual_environment_vm.vm.ipv4_addresses : ip]) : ipv4 if !startswith(ipv4, "169.254.") && !startswith(ipv4, "127")]
 }
 
 output "ipv6_addresses" {

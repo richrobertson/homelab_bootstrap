@@ -12,6 +12,11 @@ variable "db_host_ip_address" {
   type = string
 }
 
+variable "vault_mount_path" {
+  type    = string
+  default = "postgres"
+}
+
 variable "password_wo_version" {
   type    = number
   default = 1
