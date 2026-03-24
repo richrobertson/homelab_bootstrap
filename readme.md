@@ -61,4 +61,3 @@ This repository is one part of a shared homelab stack:
 
 - [Terraform module and stack docs](terraform/README.md)
 
-
