@@ -8,14 +8,49 @@ terraform {
   }
 }
 
+locals {
+  snippets_datastore_id = "cephfs"
+}
+
+resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
+  content_type = "snippets"
+  datastore_id = local.snippets_datastore_id
+  node_name    = var.node_name
+  overwrite    = true
+
+  source_raw {
+    data = <<-EOF
+    #cloud-config
+%{if trimspace(var.ssh_public_key) != ""~}
+    ssh_authorized_keys:
+      - ${var.ssh_public_key}
+%{endif~}
+%{if length(var.additional_packages) > 0~}
+    packages:
+%{for pkg in var.additional_packages~}
+      - ${pkg}
+%{endfor~}
+%{endif~}
+%{if length(var.additional_runcmds) > 0~}
+    runcmd:
+%{for cmd in var.additional_runcmds~}
+      - ${jsonencode(cmd)}
+%{endfor~}
+%{endif~}
+    EOF
+
+    file_name = "user-data-cloud-config-${var.name}.yaml"
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "vm" {
-  name      = var.name
+  name = var.name
 
   node_name = var.node_name
 
   on_boot = true
 
-  machine = "q35"
+  machine       = "q35"
   scsi_hardware = "virtio-scsi-single"
   bios          = "seabios"
 
@@ -33,12 +68,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   initialization {
+    user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
 
     datastore_id = "p0"
-    interface = "ide0"
+    interface    = "ide0"
     dns {
-      domain = "myrobertson.net"
-      servers = [ "192.168.1.245", "192.168.1.244" ]
+      domain  = "myrobertson.net"
+      servers = ["192.168.1.245", "192.168.1.244"]
     }
 
     dynamic "ip_config" {
@@ -58,10 +94,10 @@ resource "proxmox_virtual_environment_vm" "vm" {
   dynamic "network_device" {
     for_each = var.networks
     content {
-      bridge = network_device.value["bridge"]
+      bridge   = network_device.value["bridge"]
       model    = "virtio"
-       firewall = network_device.value["firewall"]
-       vlan_id  = network_device.value["vlan_tag"]
+      firewall = network_device.value["firewall"]
+      vlan_id  = network_device.value["vlan_tag"]
     }
   }
 
@@ -80,14 +116,15 @@ resource "proxmox_virtual_environment_vm" "vm" {
     ssd          = true
     file_format  = "raw"
 
-    import_from  = var.cloud_image_id
-    size         = "20"
+    import_from = var.cloud_image_id
+    size        = var.disk_size
   }
 
 }
 
 resource "proxmox_virtual_environment_haresource" "vm" {
-  resource_id  = "vm:${proxmox_virtual_environment_vm.vm.vm_id}"
-  state        = "started"
-  comment      = "Managed by Terraform"
+  count       = var.ha_enabled ? 1 : 0
+  resource_id = "vm:${proxmox_virtual_environment_vm.vm.vm_id}"
+  state       = "started"
+  comment     = "Managed by Terraform"
 }

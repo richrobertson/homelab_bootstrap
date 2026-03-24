@@ -13,7 +13,8 @@ terraform {
       version = ">= 6.1"
     }
     microsoftadcs = {
-      source = "flipyap/microsoft-adcs"
+      source  = "flipyap/microsoft-adcs"
+      version = "= 0.1.6"
     }
     powerdns = {
       source  = "pan-net/powerdns"
@@ -43,7 +44,7 @@ terraform {
 provider "proxmox" {
   endpoint  = "https://cl0.myrobertson.net:8006/api2/json"
   api_token = data.vault_generic_secret.proxmox_token.data["api_token"]
-  insecure  = true
+  insecure  = var.proxmox_insecure
 }
 
 provider "talos" {}
