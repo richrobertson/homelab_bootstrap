@@ -76,10 +76,10 @@ variable "dns_auth_server" {
 
 variable "dns" {
   type = object({
-    domain  = string
+    domain = string
     servers = object({
-    ipv4_addresses = list(string)
-    ipv6_addresses = list(string)
+      ipv4_addresses = list(string)
+      ipv6_addresses = list(string)
+    })
   })
-  })
-  }
+}

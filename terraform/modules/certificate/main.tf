@@ -58,7 +58,7 @@ resource "vault_pki_secret_backend_sign" "test" {
   name        = var.vault_pki_role
   csr         = tls_cert_request.example.cert_request_pem
   common_name = var.dns_name
-  
+
 }
 
 output "private_key_pem" {

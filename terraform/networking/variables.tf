@@ -24,7 +24,7 @@ variable "dns_server" {
 
 variable "vrf_vxlan" {
   type = number
-} 
+}
 
 variable "dataplane_vlan_tag" {
   description = "VLAN tag for the dataplane network"

@@ -45,6 +45,7 @@
 4. **Destroy or re-import resources as needed:**
 	```sh
 	terraform destroy -auto-approve
+	terraform import module.flux.github_repository.this richrobertson/homelab_flux
 	terraform apply -auto-approve
 	```
 

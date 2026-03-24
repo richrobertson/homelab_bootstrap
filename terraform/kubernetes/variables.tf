@@ -60,8 +60,8 @@ variable "proxmox_ve_nodes" {
 }
 
 variable "kubernetes_nodes_resources" {
-    type = map(object({
-        cpu_cores    = number
-        memory_in_gb = number
-    }))
+  type = map(object({
+    cpu_cores    = number
+    memory_in_gb = number
+  }))
 }
