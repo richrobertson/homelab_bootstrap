@@ -62,7 +62,7 @@ module "reverse_dns_zone" {
 resource "proxmox_virtual_environment_sdn_zone_vxlan" "l2_overlay" {
   id    = "${var.environment_short_name}l2"
   nodes = var.nodes
-  peers = flatten([for peer in data.dns_a_record_set.peers : peer.addrs[0]])
+  peers = [for peer in data.dns_a_record_set.peers : peer.addrs[0]]
   mtu   = 1450
 
   # Optional attributes

@@ -36,7 +36,7 @@ resource "microsoftadcs_certificate" "intermediate_ca_cert" {
 
 resource "vault_pki_secret_backend_intermediate_set_signed" "intermediate_ca_cert" {
   backend     = vault_mount.intermediate.path
-  certificate = microsoftadcs_certificate.intermediate_ca_cert.certificate_b64
+  certificate = microsoftadcs_certificate.intermediate_ca_cert.certificate_pem
 }
 
 # Name the issuer

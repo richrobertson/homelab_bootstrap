@@ -16,29 +16,29 @@ resource "tls_private_key" "this" {
 resource "tls_cert_request" "this" {
   private_key_pem = tls_private_key.this.private_key_pem
   subject {
-    organization = local.role.organization == ""? null : local.role.organization
-    common_name = var.role_name
+    organization = local.role.organization == "" ? null : local.role.organization
+    common_name  = var.role_name
   }
 }
 
 #https://registry.terraform.io/providers/flipyap/microsoft-adcs/latest/docs/resources/certificate
 resource "microsoftadcs_certificate" "this" {
   certificate_signing_request = tls_cert_request.this.cert_request_pem
-  template = "SubordinateCertificationAuthority-Vault"
+  template                    = "SubordinateCertificationAuthority-Vault"
 }
 
 output "private_key_pem" {
-  value = tls_private_key.this.private_key_pem
+  value     = tls_private_key.this.private_key_pem
   sensitive = true
 }
-output "cert_pem" {
-  value = chomp(microsoftadcs_certificate.this.certificate_b64)
-}
 
+output "cert_pem" {
+  value = chomp(microsoftadcs_certificate.this.certificate_pem)
+}
 
 output "cert_chain_pem" {
   value = <<-EOF
-  ${microsoftadcs_certificate.this.certificate_b64}
+  ${microsoftadcs_certificate.this.certificate_pem}
   -----BEGIN CERTIFICATE-----
   MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
   EQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRzb24x
