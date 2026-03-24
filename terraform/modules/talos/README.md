@@ -1,5 +1,21 @@
 # Basic Terraform Example
 
+Manages reusable Talos cluster bootstrap resources and related configuration outputs.
+
+## What This Manages
+
+- Reusable Talos cluster bootstrap resources, machine configuration application, and config outputs.
+
+## When To Edit
+
+- Update Talos bootstrap sequencing, node configuration rendering, or module I/O contracts.
+
+## Navigation
+
+- [Reusable Modules Index](../README.md)
+- [Terraform Index](../../README.md)
+- [Kubernetes Talos Module](../../kubernetes/talos/README.md)
+
 This example will create a basic Talos cluster using local machines.
 
 ## Prereqs
