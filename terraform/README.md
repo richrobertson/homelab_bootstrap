@@ -16,10 +16,13 @@ If you are new to this repository, use this order:
 
 - Make changes in the most specific stack/module possible.
 - Keep reusable behavior in [modules](modules/README.md), and stack-specific wiring in stack directories.
-- From this directory, run `terraform init`, `terraform plan`, and then `terraform apply` (or target a specific stack while iterating).
+- Run Terraform from the directory of the stack you are working on (for example, `terraform/firewall`, `terraform/nodes`, `terraform/networking`, `terraform/kubernetes`, or `terraform/substrate`). Each stack manages its own state/backend.
+- The root `terraform/` directory currently orchestrates only the `nodes` and `firewall` stacks via `terraform/main.tf`. When working here, you can still use `terraform plan/apply` and optionally `-target=module.nodes` or `-target=module.firewall` while iterating, but this will not manage `kubernetes`, `networking`, or `substrate` unless they are wired into `main.tf`.
 - Confirm outputs and cross-stack assumptions before opening a PR.
 
-## Top-level Stacks
+## Available Stack Directories
+
+Each directory below is an independent Terraform stack with its own state and entrypoint. Run `terraform init/plan/apply` from the stack directory you are working in. The root `terraform/main.tf` currently wires only `nodes` and `firewall`.
 
 - [firewall](firewall/README.md) — firewall-specific infrastructure and policy controls.
 - [kubernetes](kubernetes/README.md) — Talos/Kubernetes bootstrap and Vault/Kubernetes integration resources.
