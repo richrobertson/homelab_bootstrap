@@ -43,7 +43,7 @@ terraform {
 
 provider "proxmox" {
   endpoint  = "https://cl0.myrobertson.net:8006/api2/json"
-  api_token = data.vault_generic_secret.proxmox_token.data["api_token"]
+  api_token = data.vault_kv_secret_v2.proxmox_token.data["api_token"]
   insecure  = var.proxmox_insecure
 }
 

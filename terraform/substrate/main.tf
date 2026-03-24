@@ -55,16 +55,15 @@ resource "proxmox_virtual_environment_download_file" "cloud_image_old" {
 }
 
 module "database" {
-  source            = "./postgresql-database"
-  ssh_public_key    = var.ssh_public_key
-  postgres_password = var.db1_password
-  ip4_address       = "192.168.7.200/24"
-  ip4_gateway       = "192.168.7.1"
-  network_vlan_id   = 7
-  network_bridge    = "vmbr1"
-  node_name         = "pve3"
-  hostname          = "subdb1"
-  cloud_image_id    = proxmox_virtual_environment_download_file.cloud_image.id
+  source          = "./postgresql-database"
+  ssh_public_key  = var.ssh_public_key
+  ip4_address     = "192.168.7.200/24"
+  ip4_gateway     = "192.168.7.1"
+  network_vlan_id = 7
+  network_bridge  = "vmbr1"
+  node_name       = "pve3"
+  hostname        = "subdb1"
+  cloud_image_id  = proxmox_virtual_environment_download_file.cloud_image.id
 }
 
 module "powerdns_recurse_server" {

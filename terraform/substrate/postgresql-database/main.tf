@@ -18,16 +18,8 @@ module "vm" {
   additional_runcmds = [
     "sed -i \"s/#listen_addresses = 'localhost'/listen_addresses = '*'/\" /etc/postgresql/17/main/postgresql.conf",
     "echo \"host    all             all             ${cidrsubnet(var.ip4_address, 0, 0)}               scram-sha-256\" >> /etc/postgresql/17/main/pg_hba.conf",
-    "sudo -u postgres psql -c \"ALTER USER postgres WITH PASSWORD '${replace(var.postgres_password, "'", "''")}';\"",
     "systemctl restart postgresql"
   ]
   ssh_public_key = var.ssh_public_key
   ha_enabled     = true
-}
-
-module "vault_database_secret_backend" {
-  source             = "../../modules/vault_db_secret_backend"
-  depends_on         = [module.vm]
-  db_connection_name = var.hostname
-  db_host_ip_address = split("/", var.ip4_address)[0]
 }

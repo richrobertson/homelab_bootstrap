@@ -7,12 +7,6 @@ variable "ssh_public_key" {
   type = string
 }
 
-variable "postgres_password" {
-  description = "Password for the postgres user in the database."
-  type        = string
-  sensitive   = true
-}
-
 variable "hostname" {
   description = "The hostname for the VM."
   type        = string

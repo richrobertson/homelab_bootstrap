@@ -9,8 +9,8 @@ provider "dns" {
     server = "myrobertson.net"
     gssapi {
       realm    = "myrobertson.net"
-      username = data.vault_generic_secret.windows_domain_admin.data["username"]
-      password = data.vault_generic_secret.windows_domain_admin.data["password"]
+      username = data.vault_kv_secret_v2.windows_domain_admin.data["username"]
+      password = data.vault_kv_secret_v2.windows_domain_admin.data["password"]
     }
   }
 }
@@ -26,21 +26,21 @@ provider "flux" {
     url = "https://github.com/richrobertson/homelab_flux.git"
     http = {
       username = "git" # This can be any string when using a personal access token
-      password = data.vault_generic_secret.github_token.data["token"]
+      password = data.vault_kv_secret_v2.github_token.data["token"]
     }
   }
 }
 
 provider "github" {
   owner = "richrobertson"
-  token = data.vault_generic_secret.github_token.data["token"]
+  token = data.vault_kv_secret_v2.github_token.data["token"]
 }
 
 provider "powerdns" {}
 
 provider "microsoftadcs" {
   host     = "dc1.myrobertson.net"
-  username = data.vault_generic_secret.windows_domain_admin.data["username"]
-  password = data.vault_generic_secret.windows_domain_admin.data["password"]
+  username = data.vault_kv_secret_v2.windows_domain_admin.data["username"]
+  password = data.vault_kv_secret_v2.windows_domain_admin.data["password"]
   use_ntlm = true
 }
