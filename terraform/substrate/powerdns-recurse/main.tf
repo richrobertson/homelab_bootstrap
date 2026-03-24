@@ -11,11 +11,10 @@ module "vm" {
     ip4_address = "192.168.7.202/24"
     ip4_gateway = "192.168.7.1"
   }]
-  disk_size             = "40"
-  node_name             = "pve3"
-  additional_packages   = ["gpg"]
-  ansible_playbook_name = ""
-  ssh_public_key        = var.ssh_public_key
-  ha_enabled            = true
+  disk_size           = "40"
+  node_name           = "pve3"
+  additional_packages = ["gpg"]
+  ssh_public_key      = var.ssh_public_key
+  ha_enabled          = true
 }
 

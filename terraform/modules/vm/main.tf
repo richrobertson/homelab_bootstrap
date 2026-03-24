@@ -19,25 +19,25 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
   overwrite    = true
 
   source_raw {
-    data = <<-EOF
-    #cloud-config
+    data = <<EOF
+#cloud-config
 %{if trimspace(var.ssh_public_key) != ""~}
-    ssh_authorized_keys:
-      - ${var.ssh_public_key}
+ssh_authorized_keys:
+  - ${var.ssh_public_key}
 %{endif~}
 %{if length(var.additional_packages) > 0~}
-    packages:
+packages:
 %{for pkg in var.additional_packages~}
-      - ${pkg}
+  - ${pkg}
 %{endfor~}
 %{endif~}
 %{if length(var.additional_runcmds) > 0~}
-    runcmd:
+runcmd:
 %{for cmd in var.additional_runcmds~}
-      - ${jsonencode(cmd)}
+  - ${jsonencode(cmd)}
 %{endfor~}
 %{endif~}
-    EOF
+EOF
 
     file_name = "user-data-cloud-config-${var.name}.yaml"
   }

@@ -50,11 +50,6 @@ variable "additional_runcmds" {
   default = []
 }
 
-variable "ansible_playbook_name" {
-  type    = string
-  default = ""
-}
-
 variable "ssh_public_key" {
   type    = string
   default = ""
