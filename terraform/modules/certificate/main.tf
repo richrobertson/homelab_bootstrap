@@ -62,7 +62,8 @@ resource "vault_pki_secret_backend_sign" "test" {
 }
 
 output "private_key_pem" {
-  value = tls_cert_request.example.private_key_pem
+  value     = var.private_key_pem
+  sensitive = true
 }
 
 output "certificate_pem" {

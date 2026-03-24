@@ -5,4 +5,4 @@ machine:
         config:
             ${environment_name}.myrobertson.net:
                 tls:
-                    insecureSkipVerify: true
+                    insecureSkipVerify: %{ if environment_name == "dev" }true%{ else }false%{ endif }

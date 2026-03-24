@@ -28,5 +28,5 @@ module "vault_database_secret_backend" {
   source             = "../../modules/vault_db_secret_backend"
   depends_on         = [module.vm]
   db_connection_name = var.hostname
-  db_host_ip_address = cidrhost(var.ip4_address, 0)
+  db_host_ip_address = split("/", var.ip4_address)[0]
 }

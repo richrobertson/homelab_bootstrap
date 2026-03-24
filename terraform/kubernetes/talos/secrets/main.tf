@@ -89,13 +89,16 @@ resource "tls_locally_signed_cert" "client_cert" {
 
 resource "talos_machine_secrets" "this" {}
 output "machine_secrets_old" {
-  value = talos_machine_secrets.this.machine_secrets
+  value     = talos_machine_secrets.this.machine_secrets
+  sensitive = true
 }
 output "client_configuration_old" {
-  value = talos_machine_secrets.this.client_configuration
+  value     = talos_machine_secrets.this.client_configuration
+  sensitive = true
 }
 
 output "machine_secrets" {
+  sensitive = true
   value = {
       cluster = {
         id     = random_id.cluster_id.b64_std
@@ -140,6 +143,7 @@ output "machine_secrets" {
 }
 
 output "client_configuration" {
+  sensitive = true
   value = {
     ca_certificate     = base64encode(trimspace(<<-EOF
     ${module.os.cert_pem}

@@ -10,6 +10,7 @@ variable "ssh_public_key" {
 variable "postgres_password" {
   description = "Password for the postgres user in the database."
   type        = string
+  sensitive   = true
 }
 
 variable "hostname" {
