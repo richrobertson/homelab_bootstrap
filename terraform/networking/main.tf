@@ -98,10 +98,6 @@ resource "proxmox_virtual_environment_sdn_vnet" "controlplane" {
   id   = "${var.environment_short_name}ctr"
   zone = proxmox_virtual_environment_sdn_zone_evpn.l3_network.id
   tag  = var.controlplane_vlan_tag
-
-  depends_on = [
-    proxmox_virtual_environment_sdn_applier.finalizer
-  ]
 }
 
 resource "proxmox_virtual_environment_sdn_subnet" "controlplane_subnets" {
@@ -112,20 +108,12 @@ resource "proxmox_virtual_environment_sdn_subnet" "controlplane_subnets" {
   dns_zone_prefix = "cp.${each.key}"
 
   snat = false
-
-  depends_on = [
-    proxmox_virtual_environment_sdn_applier.finalizer
-  ]
 }
 
 resource "proxmox_virtual_environment_sdn_vnet" "dataplane" {
   id   = "${var.environment_short_name}data"
   zone = proxmox_virtual_environment_sdn_zone_evpn.l3_network.id
   tag  = var.dataplane_vlan_tag
-
-  depends_on = [
-    proxmox_virtual_environment_sdn_applier.finalizer
-  ]
 }
 
 # resource "proxmox_virtual_environment_sdn_subnet" "dataplane_metallb_subnet" {
@@ -133,10 +121,6 @@ resource "proxmox_virtual_environment_sdn_vnet" "dataplane" {
 #   vnet    = proxmox_virtual_environment_sdn_vnet.dataplane.id
 #   gateway = "10.${var.vxlan_octet["metallb"]}.0.1"
 
-#   depends_on = [
-#     proxmox_virtual_environment_sdn_vnet.dataplane,
-#     proxmox_virtual_environment_sdn_applier.finalizer
-#   ]
 # }
 
 resource "proxmox_virtual_environment_sdn_subnet" "dataplane_subnets" {
@@ -147,10 +131,6 @@ resource "proxmox_virtual_environment_sdn_subnet" "dataplane_subnets" {
   dns_zone_prefix = "dp.${each.key}"
 
   snat = false
-
-  depends_on = [
-    proxmox_virtual_environment_sdn_applier.finalizer
-  ]
 }
 
 # SDN Applier - Applies SDN configuration changes
@@ -174,7 +154,4 @@ resource "proxmox_virtual_environment_sdn_applier" "sdn_applier" {
     proxmox_virtual_environment_sdn_subnet.controlplane_subnets,
     proxmox_virtual_environment_sdn_subnet.dataplane_subnets,
   ]
-}
-
-resource "proxmox_virtual_environment_sdn_applier" "finalizer" {
 }

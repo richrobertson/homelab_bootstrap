@@ -2,7 +2,7 @@ terraform {
   required_providers {
     talos = {
       source  = "siderolabs/talos"
-      version = "0.9.0"
+      version = "0.9.0-alpha.0"
     }
   }
 }
@@ -37,20 +37,20 @@ resource "random_id" "secretbox_encryption_secret" {
 }
 
 module "etcd" {
-  source   = "./ca_cert"
+  source    = "./ca_cert"
   role_name = "etcd-ca"
 }
 
 module "k8s" {
-  depends_on = [ module.etcd ]
-  source   = "./ca_cert"
-  role_name = "kubernetes-ca"
+  depends_on = [module.etcd]
+  source     = "./ca_cert"
+  role_name  = "kubernetes-ca"
 }
 
 module "k8s_aggregator" {
-  depends_on = [ module.k8s ]
-  source   = "./ca_cert"
-  role_name = "k8s-aggregator"
+  depends_on = [module.k8s]
+  source     = "./ca_cert"
+  role_name  = "k8s-aggregator"
 }
 
 resource "tls_private_key" "k8s_serviceaccount_private_key" {
@@ -59,9 +59,9 @@ resource "tls_private_key" "k8s_serviceaccount_private_key" {
 }
 
 module "os" {
-  depends_on = [ module.k8s_aggregator ]
-  source   = "./ca_cert"
-  role_name = "talos"
+  depends_on = [module.k8s_aggregator]
+  source     = "./ca_cert"
+  role_name  = "talos"
 }
 
 
@@ -100,52 +100,52 @@ output "client_configuration_old" {
 output "machine_secrets" {
   sensitive = true
   value = {
-      cluster = {
-        id     = random_id.cluster_id.b64_std
-        secret = random_id.cluster_secret.b64_std
+    cluster = {
+      id     = random_id.cluster_id.b64_std
+      secret = random_id.cluster_secret.b64_std
+    }
+    secrets = {
+      aescbc_encryption_secret    = null
+      bootstrap_token             = module.bootstrap_token.bootstrap_token
+      secretbox_encryption_secret = random_id.secretbox_encryption_secret.b64_std
+    }
+    trustdinfo = {
+      token = module.trustdinfo_token.bootstrap_token
+    }
+    certs = {
+      etcd = {
+        # this is working
+        key  = base64encode(trimspace(module.etcd.private_key_pem))
+        cert = base64encode(trimspace(module.etcd.cert_chain_pem))
       }
-      secrets = {
-        aescbc_encryption_secret    = null
-        bootstrap_token             = module.bootstrap_token.bootstrap_token
-        secretbox_encryption_secret = random_id.secretbox_encryption_secret.b64_std
+      k8s = {
+        # Some libraries require the full certificate chain to verify properly, while
+        # other kubernetes components expect only one certificate to be provided. 
+        # https://discuss.kubernetes.io/t/support-for-injecting-full-certificate-chain-to-resolve-verification-issues-in-k8s-clusters-with-intermediate-ca/32754
+        key = talos_machine_secrets.this.machine_secrets.certs.k8s.key
+        #key  = base64encode(trimspace(module.k8s.private_key_pem))
+        cert = talos_machine_secrets.this.machine_secrets.certs.k8s.cert
+        #cert = base64encode(trimspace(module.k8s.cert_chain_pem))
       }
-      trustdinfo = {
-        token = module.trustdinfo_token.bootstrap_token
+      k8s_aggregator = {
+        key  = base64encode(trimspace(module.k8s_aggregator.private_key_pem))
+        cert = base64encode(trimspace(module.k8s_aggregator.cert_chain_pem))
       }
-      certs = {
-        etcd = {
-          # this is working
-          key  = base64encode(trimspace(module.etcd.private_key_pem)) 
-          cert = base64encode(trimspace(module.etcd.cert_chain_pem))
-        }
-        k8s = {
-          # Some libraries require the full certificate chain to verify properly, while
-          # other kubernetes components expect only one certificate to be provided. 
-          # https://discuss.kubernetes.io/t/support-for-injecting-full-certificate-chain-to-resolve-verification-issues-in-k8s-clusters-with-intermediate-ca/32754
-          key  = talos_machine_secrets.this.machine_secrets.certs.k8s.key  
-          #key  = base64encode(trimspace(module.k8s.private_key_pem))
-          cert = talos_machine_secrets.this.machine_secrets.certs.k8s.cert 
-          #cert = base64encode(trimspace(module.k8s.cert_chain_pem))
-        }
-        k8s_aggregator = {
-          key  = base64encode(trimspace(module.k8s_aggregator.private_key_pem))
-          cert = base64encode(trimspace(module.k8s_aggregator.cert_chain_pem))
-        }
-        k8s_serviceaccount = {
-          key = base64encode(trimspace(tls_private_key.k8s_serviceaccount_private_key.private_key_pem))
-        }
-        os = {
-          key  = base64encode(trimspace(module.os.private_key_pem))
-          cert = base64encode(trimspace(module.os.cert_chain_pem))
-        }
+      k8s_serviceaccount = {
+        key = base64encode(trimspace(tls_private_key.k8s_serviceaccount_private_key.private_key_pem))
+      }
+      os = {
+        key  = base64encode(trimspace(module.os.private_key_pem))
+        cert = base64encode(trimspace(module.os.cert_chain_pem))
       }
     }
+  }
 }
 
 output "client_configuration" {
   sensitive = true
   value = {
-    ca_certificate     = base64encode(trimspace(<<-EOF
+    ca_certificate = base64encode(trimspace(<<-EOF
     ${module.os.cert_pem}
   -----BEGIN CERTIFICATE-----
   MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
@@ -161,7 +161,7 @@ output "client_configuration" {
   KBEosp9OrdExBwIgMyq4owAejBTFfxDEco8n/Si9OBQLLZ01n+vwnwLr964=
   -----END CERTIFICATE-----
   EOF
-  ))
+    ))
     client_certificate = base64encode(trimspace(tls_locally_signed_cert.client_cert.cert_pem))
     client_key         = base64encode(trimspace(tls_private_key.client_key.private_key_pem))
   }
