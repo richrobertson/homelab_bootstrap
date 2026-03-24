@@ -1,0 +1,8 @@
+cluster:
+  allowSchedulingOnControlPlanes: true
+machine:
+    registries:
+        config:
+            ${environment_name}.myrobertson.net:
+                tls:
+                    insecureSkipVerify: true

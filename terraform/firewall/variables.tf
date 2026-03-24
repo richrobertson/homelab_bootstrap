@@ -7,12 +7,12 @@ variable "cluster_short_name" {
 }
 
 variable "lan_network_bridge" {
-  type        = string
+  type = string
 }
 
 
 variable "wan_network_bridge" {
-  type        = string
+  type = string
 }
 
 variable "wan_network_vlan_tag" {

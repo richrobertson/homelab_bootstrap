@@ -1,3 +1,11 @@
+# Network Zone Module
+#
+# Provisions a Proxmox SDN VXLAN zone for overlay networking.
+
+# -----------------------------
+# Proxmox SDN VXLAN Zone Resource
+# Creates a VXLAN SDN zone for the specified nodes and peers.
+# -----------------------------
 resource "proxmox_virtual_environment_sdn_zone_vxlan" "example" {
   id    = "vxlan1"
   nodes = ["pve"]

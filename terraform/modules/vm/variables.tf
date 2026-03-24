@@ -20,7 +20,7 @@ variable "networks" {
     firewall = bool
     ip4_address  = string
     ip4_gateway  = string
-    vlan_tag      = string
+    vlan_tag      = number
   }))
 }
 
