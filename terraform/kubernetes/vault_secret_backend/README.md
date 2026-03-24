@@ -1,6 +1,6 @@
 # Kubernetes Vault Secret Backend Module
 
-Manages Vault secret-backend resources consumed by the Kubernetes stack.
+Manages Vault secret backend resources consumed by the Kubernetes stack.
 
 ## What This Manages
 

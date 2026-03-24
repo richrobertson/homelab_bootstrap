@@ -1,6 +1,6 @@
 # Vault DB Secret Backend Module
 
-Manages shared Vault database secret-backend provisioning behavior.
+Manages shared Vault database secret backend provisioning behavior.
 
 ## What This Manages
 

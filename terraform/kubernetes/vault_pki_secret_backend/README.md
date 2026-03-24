@@ -1,6 +1,6 @@
 # Kubernetes Vault PKI Secret Backend Module
 
-Manages Vault PKI secret-backend resources used by Kubernetes certificate flows.
+Manages Vault PKI secret backend resources used by Kubernetes certificate flows.
 
 ## What This Manages
 
