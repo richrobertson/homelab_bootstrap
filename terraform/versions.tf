@@ -30,6 +30,14 @@ terraform {
       source  = "bpg/proxmox"
       version = ">=0.83.2"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.2"
+    }
     vault = {
       source  = "hashicorp/vault"
       version = ">=5.3.0"

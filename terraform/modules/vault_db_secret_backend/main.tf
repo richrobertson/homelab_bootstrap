@@ -29,7 +29,7 @@ resource "vault_database_secret_backend_connection" "postgres" {
     connection_url      = "host=${var.db_host_ip_address} port=5432 user={{username}} password={{password}} dbname=postgres"
     username            = "postgres"
     password_wo         = tostring(ephemeral.vault_kv_secret_v2.db_secret.data.password)
-    password_wo_version = 1
+    password_wo_version = var.password_wo_version
   }
 }
 

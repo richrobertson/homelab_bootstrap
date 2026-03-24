@@ -11,3 +11,8 @@ variable "db_connection_name" {
 variable "db_host_ip_address" {
   type = string
 }
+
+variable "password_wo_version" {
+  type    = number
+  default = 1
+}

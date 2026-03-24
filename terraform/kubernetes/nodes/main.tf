@@ -8,20 +8,6 @@ terraform {
   }
 }
 
-locals {
-  cloud_image_url = "https://factory.talos.dev/image/dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586/v1.11.1/nocloud-amd64.raw.xz"
-}
-
-resource "proxmox_virtual_environment_download_file" "cloud_image" {
-  count               = 0
-  content_type        = "import"
-  datastore_id        = "cephfs"
-  node_name           = "pve3"
-  file_name           = "nocloud-amd64.iso"
-  url                 = local.cloud_image_url
-  overwrite_unmanaged = true
-}
-
 module "control_plane_subnet_domains" {
   for_each  = var.fault_domains
   source    = "../../modules/dns_zone"
