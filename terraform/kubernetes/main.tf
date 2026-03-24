@@ -36,11 +36,11 @@ module "nodes" {
   proxmox_ve_nodes   = var.proxmox_ve_nodes
   dns_auth_server    = var.dns_auth_server
   dns = {
-    domain  = "${var.environment_name}.myrobertson.net"
+    domain = "${var.environment_name}.myrobertson.net"
     servers = {
       ipv4_addresses = var.dns_server.ipv4_addresses
       ipv6_addresses = var.dns_server.ipv6_addresses
-    } 
+    }
   }
 
   control_plane_network_bridge = var.control_plane_network_bridge
@@ -55,7 +55,7 @@ module "nodes" {
 }
 
 module "vault_pki_secret_backend" {
-  source = "./vault_pki_secret_backend"
+  source       = "./vault_pki_secret_backend"
   cluster_name = var.cluster_name
 }
 
@@ -112,6 +112,7 @@ module "certs" {
   environment_name              = var.environment_name
   kubernetes_cluster_endpoint   = module.talos_cluster.cluster_endpoint
   vault_kubernetes_auth_backend = module.vault_auth_backend.backend
+  vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
 }
 
 

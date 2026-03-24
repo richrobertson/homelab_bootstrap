@@ -1,7 +1,8 @@
 
 
 locals {
-  vault_pki_role_name = "cluster_ssl_certs"
+  vault_pki_role_name  = "cluster_ssl_certs"
+  vault_pki_mount_path = trim(var.vault_pki_secret_backend_path, "/")
 }
 
 resource "vault_policy" "vault_cert_issuer_policy" {
@@ -9,10 +10,10 @@ resource "vault_policy" "vault_cert_issuer_policy" {
 
   policy = <<EOT
 
-path "pki_int_${var.environment_name}*"                        { capabilities = ["read", "list"] }
-path "pki_int_${var.environment_name}/sign/${local.vault_pki_role_name}"    { capabilities = ["create", "update"] }
-path "pki_int_${var.environment_name}/issue/${local.vault_pki_role_name}"   { capabilities = ["create"] }
-path "pki_int_${var.environment_name}/roles/${local.vault_pki_role_name}"   { capabilities = ["create","read", "list"] }
+path "${local.vault_pki_mount_path}" { capabilities = ["read", "list"] }
+path "${local.vault_pki_mount_path}/sign/${local.vault_pki_role_name}" { capabilities = ["create", "update"] }
+path "${local.vault_pki_mount_path}/issue/${local.vault_pki_role_name}" { capabilities = ["create"] }
+path "${local.vault_pki_mount_path}/roles/${local.vault_pki_role_name}" { capabilities = ["create", "read", "list"] }
 EOT
 }
 

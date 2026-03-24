@@ -1,6 +1,6 @@
 locals {
   workspace_env = terraform.workspace == "default" ? "production" : terraform.workspace
-  env           = local.envs[local.workspace_env]
+  env           = lookup(local.envs, local.workspace_env, local.envs["default"])
 
   envs = {
     "production" = {

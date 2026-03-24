@@ -23,7 +23,11 @@ path "${var.environment_name}-kubernetes/*" {
 }
 
 path "secret/data/${var.allowed_secret_path_prefix}/*" {
-  capabilities = ["read", "list"]
+  capabilities = ["read"]
+}
+
+path "secret/metadata/${var.allowed_secret_path_prefix}/*" {
+  capabilities = ["list"]
 }
 
 EOT
