@@ -1,4 +1,4 @@
-# Basic Terraform Example
+# Talos Module
 
 Manages reusable Talos cluster bootstrap resources and related configuration outputs.
 
@@ -16,7 +16,7 @@ Manages reusable Talos cluster bootstrap resources and related configuration out
 - [Terraform Index](../../README.md)
 - [Kubernetes Talos Module](../../kubernetes/talos/README.md)
 
-This example will create a basic Talos cluster using local machines.
+This module provisions a Talos cluster using pre-booted machines in maintenance mode.
 
 ## Prereqs
 
