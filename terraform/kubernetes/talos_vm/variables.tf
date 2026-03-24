@@ -42,7 +42,7 @@ variable "disk_size" {
 
 variable "ssh_public_key" {
   type    = string
-  default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOWOeC6oOqvDBnVpY+DU8h78cXVd2EiE6NhrCthKsm7/ rich@myrobertson.com"
+  default = ""
 }
 
 variable "additional_packages" {

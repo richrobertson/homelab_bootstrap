@@ -1,12 +1,13 @@
 locals {
-  cluster_fqdn = "cp.${var.cluster_name}.myrobertson.net"
-  cluster_endpoint      = "https://${local.cluster_fqdn}:6443"
+  cluster_fqdn     = "cp.${var.cluster_name}.myrobertson.net"
+  cluster_endpoint = "https://${local.cluster_fqdn}:6443"
+  environment_name = var.cluster_name == "development" ? "dev" : var.cluster_name
   //machine_secrets = yamlencode(var.talos_secrets_yaml)
   # Talos Kubernetes Bootstrap Module
   #
   # This file configures Talos machine and cluster settings for Kubernetes control plane and worker nodes.
   # It manages secrets, patches, and endpoint configuration for secure and reproducible cluster bootstrapping.
-  machine_secrets = module.secrets.machine_secrets
+  machine_secrets      = module.secrets.machine_secrets
   client_configuration = module.secrets.client_configuration
 
 
@@ -18,8 +19,8 @@ locals {
 }
 
 module "secrets" {
-  source = "./secrets"
-  cluster_name = var.cluster_name
+  source                        = "./secrets"
+  cluster_name                  = var.cluster_name
   vault_pki_secret_backend_path = var.vault_pki_secret_backend_path
 }
 
@@ -32,17 +33,17 @@ data "talos_machine_configuration" "controlplane" {
   # Local Variables
   # Define cluster FQDN, endpoint, secrets, and configuration patches.
   # -----------------------------
-  machine_secrets  = local.machine_secrets
+  machine_secrets = local.machine_secrets
   config_patches = concat(local.global_patches, [
-    yamlencode({ 
-      machine = { 
+    yamlencode({
+      machine = {
         certSANs = concat(
           [local.cluster_fqdn],
           [for k, v in var.node_data.controlplanes : v.ip4_address]
         )
       }
-    }) ],
-    [ file("${path.module}/files/taint-cp-nodes.yaml") ]
+    })],
+    [file("${path.module}/files/taint-cp-nodes.yaml")]
   )
 }
 
@@ -56,8 +57,8 @@ data "talos_machine_configuration" "worker" {
   # Retrieves machine and client secrets from Vault for Talos configuration.
   # -----------------------------
   config_patches = concat(local.global_patches, [
-    yamlencode({ 
-      machine = { 
+    yamlencode({
+      machine = {
         nodeLabels = {
           "intel.feature.node.kubernetes.io/gpu" = "true"
         }
@@ -73,9 +74,9 @@ data "talos_machine_configuration" "worker" {
 data "talos_client_configuration" "this" {
   cluster_name         = var.cluster_name
   client_configuration = module.secrets.client_configuration
-  endpoints            = [local.cluster_endpoint]
+  endpoints            = [for k, v in var.node_data.controlplanes : v.ip4_address]
   nodes                = [for k, v in var.node_data.controlplanes : v.ip4_address]
-  
+
   # -----------------------------
   # Talos Machine Configuration Data (Control Plane)
   # Generates Talos machine configuration for control plane nodes, including endpoint, secrets, and patches.
@@ -89,15 +90,15 @@ resource "talos_machine_configuration_apply" "controlplane" {
   node                        = each.value.ip4_address
   config_patches = [
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-  # -----------------------------
-  # Talos Client Configuration
-  # Generates client configuration for accessing the Talos cluster.
-  # -----------------------------
+      # -----------------------------
+      # Talos Client Configuration
+      # Generates client configuration for accessing the Talos cluster.
+      # -----------------------------
       hostname     = each.value.hostname
       install_disk = each.value.install_disk
     }),
     templatefile("${path.module}/templates/cp-scheduling.yaml.tmpl", {
-      environment_name     = var.cluster_name
+      environment_name = local.environment_name
     }),
     file("${path.module}/files/metrics-server.yaml"),
     file("${path.module}/files/rotate-server-certificates.yaml"),
@@ -117,10 +118,10 @@ resource "talos_machine_configuration_apply" "worker" {
   node                        = each.value.ip4_address
   config_patches = [
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-  # -----------------------------
-  # Talos Machine Configuration Apply (Control Plane)
-  # Applies generated configuration to control plane nodes.
-  # -----------------------------
+      # -----------------------------
+      # Talos Machine Configuration Apply (Control Plane)
+      # Applies generated configuration to control plane nodes.
+      # -----------------------------
       hostname     = each.value.hostname
       install_disk = each.value.install_disk
     })
@@ -145,19 +146,19 @@ resource "talos_machine_bootstrap" "this" {
   # Talos Machine Configuration Data (Worker)
   # Generates Talos machine configuration for worker nodes, including endpoint, secrets, and patches.
   # -----------------------------
-  depends_on = [ time_sleep.wait_20_seconds ]
+  depends_on = [time_sleep.wait_20_seconds]
 
   client_configuration = module.secrets.client_configuration
   node                 = [for k, v in var.node_data.controlplanes : v.ip4_address][0]
 }
 
 data "talos_cluster_health" "health" {
-  count=1
-  depends_on           = [ talos_machine_bootstrap.this ]
-  client_configuration = data.talos_client_configuration.this.client_configuration
-  control_plane_nodes  = [for k, v in var.node_data.controlplanes : v.ip4_address]
-  worker_nodes = [for k, v in var.node_data.workers : v.ip4_address]
-  endpoints            = [for k, v in var.node_data.controlplanes : v.ip4_address]
+  count                  = 1
+  depends_on             = [talos_machine_bootstrap.this]
+  client_configuration   = data.talos_client_configuration.this.client_configuration
+  control_plane_nodes    = [for k, v in var.node_data.controlplanes : v.ip4_address]
+  worker_nodes           = [for k, v in var.node_data.workers : v.ip4_address]
+  endpoints              = [for k, v in var.node_data.controlplanes : v.ip4_address]
   skip_kubernetes_checks = true
 }
 

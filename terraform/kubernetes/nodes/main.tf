@@ -110,9 +110,9 @@ module "data_plane_subnet_domains" {
 }
 
 module "worker_vms" {
-  depends_on = [ module.data_plane_subnet_domains, module.control_plane_vms ]
-  source   = "../talos_vm"
-  for_each = var.fault_domains
+  depends_on = [module.data_plane_subnet_domains, module.control_plane_vms]
+  source     = "../talos_vm"
+  for_each   = var.fault_domains
 
   name         = "k8s-${var.cluster_short_name}-worker-${each.value.id}"
   node_name    = var.proxmox_ve_nodes[each.value.id]
@@ -122,7 +122,7 @@ module "worker_vms" {
     {
       bridge      = var.worker_network_bridge
       firewall    = false
-      vlan_tag    = null
+      vlan_tag    = var.worker_network_vlan_id
       ip4_address = "${cidrhost(var.worker_subnets_by_fd[each.key].cidr, 2)}/24"
       ip4_gateway = cidrhost(var.worker_subnets_by_fd[each.key].cidr, 1)
     }
@@ -143,7 +143,7 @@ module "data_plane_host_records" {
   source     = "../../modules/dns_record"
   record = {
     zone_name = "dp.${each.key}.${var.dns.domain}"
-    name      = "k8s-${var.cluster_short_name}-dp-${each.value.id}"
+    name      = "k8s-${var.cluster_short_name}-worker-${each.value.id}"
     type      = "a"
     records   = [for ipv4_addresses in module.worker_vms[each.key].ipv4_addresses : ipv4_addresses if !startswith(ipv4_addresses, "10.244")]
   }

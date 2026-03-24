@@ -17,8 +17,8 @@ variable "record" {
 
 # Add A record to the zone
 resource "powerdns_record" "records" {
-  zone    = "${var.record.zone_name}."
-  name    = "${var.record.name}.${var.record.zone_name}."
+  zone    = endswith(var.record.zone_name, ".") ? var.record.zone_name : "${var.record.zone_name}."
+  name    = endswith(var.record.zone_name, ".") ? "${var.record.name}.${var.record.zone_name}" : "${var.record.name}.${var.record.zone_name}."
   type    = var.record.type
   ttl     = 300
   records = var.record.records

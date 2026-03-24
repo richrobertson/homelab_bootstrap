@@ -1,5 +1,9 @@
 
 
+locals {
+  kubeconfig = yamldecode(module.nodes.kubeconfig)
+}
+
 provider "dns" {
   update {
     server = "myrobertson.net"
@@ -13,10 +17,10 @@ provider "dns" {
 
 provider "flux" {
   kubernetes = {
-    host                   = length(module.kubernetes_cluster) == 0 ? "" : module.kubernetes_cluster[0].kubernetes_client_configuration.host
-    client_certificate     = length(module.kubernetes_cluster) == 0 ? "" : base64decode(module.kubernetes_cluster[0].kubernetes_client_configuration.client_certificate)
-    client_key             = length(module.kubernetes_cluster) == 0 ? "" : base64decode(module.kubernetes_cluster[0].kubernetes_client_configuration.client_key)
-    cluster_ca_certificate = length(module.kubernetes_cluster) == 0 ? "" : base64decode(module.kubernetes_cluster[0].kubernetes_client_configuration.ca_certificate)
+    host                   = local.kubeconfig.clusters[0].cluster.server
+    client_certificate     = base64decode(local.kubeconfig.users[0].user["client-certificate-data"])
+    client_key             = base64decode(local.kubeconfig.users[0].user["client-key-data"])
+    cluster_ca_certificate = base64decode(local.kubeconfig.clusters[0].cluster["certificate-authority-data"])
   }
   git = {
     url = "https://github.com/richrobertson/homelab_flux.git"
@@ -34,20 +38,8 @@ provider "github" {
 
 provider "powerdns" {}
 
-provider "proxmox" {
-  endpoint = "https://cl0.myrobertson.net:8006/"
-  username = data.vault_generic_secret.proxmox_token.data["username"]
-  password = data.vault_generic_secret.proxmox_token.data["password"]
-  ssh {
-    agent = true
-  }
-  insecure = var.proxmox_insecure
-}
-
-provider "talos" {}
-
 provider "microsoftadcs" {
-  host = "dc1.myrobertson.net"
+  host     = "dc1.myrobertson.net"
   username = data.vault_generic_secret.windows_domain_admin.data["username"]
   password = data.vault_generic_secret.windows_domain_admin.data["password"]
   use_ntlm = true
