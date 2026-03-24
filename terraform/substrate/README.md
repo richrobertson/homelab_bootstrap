@@ -5,7 +5,7 @@ Manages foundational substrate services required before Kubernetes workloads.
 ## What This Stack Manages
 
 - Foundational backing services required before cluster-level resources are fully useful.
-- Platform services that other stacks depend on (for example database and DNS substrate components).
+- Platform services that other stacks depend on (for example, database and DNS substrate components).
 
 ## When To Edit
 

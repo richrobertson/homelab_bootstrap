@@ -39,10 +39,10 @@ When adding or changing infrastructure behavior:
 2. If behavior impacts parent stack semantics, update the parent README too.
 3. If a new module/stack was added, add it to the nearest index README and verify links.
 4. Keep each README practical by documenting:
-	- What it provisions.
-	- Inputs/assumptions that are easy to miss.
-	- Operational impact (what breaks if misconfigured).
-	- Related modules/stacks to inspect during reviews.
+    - What it provisions.
+    - Inputs/assumptions that are easy to miss.
+    - Operational impact (what breaks if misconfigured).
+    - Related modules/stacks to inspect during reviews.
 
 Use this short template for new README files:
 
