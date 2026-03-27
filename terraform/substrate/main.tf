@@ -36,7 +36,7 @@ locals {
   cloud_image_url      = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
   cloud_image_url_old  = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
   substrate_ip_gateway = var.substrate_ip_gateway != "" ? var.substrate_ip_gateway : var.database_ip_gateway
-  dns_servers          = [split("/", var.powerdns_auth_ip_address)[0], split("/", var.powerdns_recurse_ip_address)[0]]
+  dns_servers          = var.substrate_dns_servers
 
 }
 

@@ -55,3 +55,9 @@ variable "root_domain" {
   description = "Root DNS domain used for substrate VM cloud-init search domain."
   type        = string
 }
+
+variable "substrate_dns_servers" {
+  description = "Bootstrap DNS resolver servers used by substrate VMs during initial provisioning."
+  type        = list(string)
+  default     = ["1.1.1.1", "8.8.8.8"]
+}
