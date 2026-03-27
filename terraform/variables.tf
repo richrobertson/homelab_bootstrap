@@ -13,11 +13,6 @@ variable "proxmox_insecure" {
   default     = false
 }
 
-variable "dns_zone" {
-  description = "DNS zone name for infrastructure records. Example: example.com"
-  type        = string
-}
-
 variable "dns_update_server" {
   description = "DNS server hostname/IP that accepts dynamic updates. Example: dns01.example.com"
   type        = string

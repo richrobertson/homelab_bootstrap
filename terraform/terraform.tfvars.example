@@ -18,7 +18,6 @@ proxmox_insecure = false  # Set to true ONLY for development with self-signed ce
 root_domain = "example.net"
 
 # DNS Configuration (for gssapi-based DNS updates)
-dns_zone          = "example.net"
 dns_update_server = "dns01.example.net"
 dns_realm         = "EXAMPLE.NET"
 
@@ -29,39 +28,11 @@ default_dns_servers = ["203.0.113.201", "203.0.113.202"]
 adcs_host = "dc1.example.net"
 
 # ============================================================================
-# OPTIONAL: ORGANIZATION AND BRANDING
+# STACK-SPECIFIC VARIABLES
 # ============================================================================
-
-# Used for certificate generation
-organization = "Example Organization"
-
-# ============================================================================
-# OPTIONAL: SUBSTRATE NETWORK CONFIGURATION
-# ============================================================================
-# These are the VMs that provide infrastructure services (DB, DNS, etc.)
-
-substrate_vlan_id       = 100
-substrate_network_bridge = "vmbr1"
-
-# Database VM
-database_ip_address = "203.0.113.200/24"
-database_ip_gateway = "203.0.113.1"
-substrate_ip_gateway = "203.0.113.1"
-
-# PowerDNS Authoritative Server
-powerdns_auth_ip_address = "203.0.113.201/24"
-
-# PowerDNS Recursive Server
-powerdns_recurse_ip_address = "203.0.113.202/24"
-
-# ============================================================================
-# ADDITIONAL ENVIRONMENT-SPECIFIC VARIABLES
-# ============================================================================
-# Add any other variables defined in terraform/variables.tf below
-
-# Example: If you have environment_name defined
-# environment_name = "production"
-# environment_short_name = "prod"
+# Additional variables for the standalone stacks under terraform/kubernetes,
+# terraform/networking, and terraform/substrate should be defined in per-stack
+# tfvars files for those directories.
 
 # ============================================================================
 # NOTES
@@ -81,6 +52,5 @@ powerdns_recurse_ip_address = "203.0.113.202/24"
 #    - See PUBLIC_RELEASE_GUIDE.md for detailed backend setup
 #
 # 4. For more variables, see:
-#    - terraform/variables.tf (main module)
-#    - terraform/kubernetes/variables.tf (kubernetes module)
-#    - And subdirectory variable files
+#    - terraform/variables.tf (root module)
+#    - per-stack variables.tf files in terraform/*/

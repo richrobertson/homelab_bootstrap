@@ -117,7 +117,7 @@ This repository is one part of a shared homelab stack:
 
 This repository runs both [Semgrep](https://semgrep.dev/) and [GitHub CodeQL](https://docs.github.com/code-security/code-scanning) via GitHub Actions on push/pull requests to `main`/`master`, with scheduled scans as well.
 
-SARIF/code-scanning results are available in **GitHub Security**:
+When GitHub code scanning is enabled for the repository, CodeQL uploads SARIF results to **GitHub Security**:
 
 > **Repository → Security → Code scanning alerts**
 
@@ -125,6 +125,6 @@ Workflow files:
 - Semgrep: [.github/workflows/sast-semgrep.yml](.github/workflows/sast-semgrep.yml)
 - CodeQL: [.github/workflows/codeql.yml](.github/workflows/codeql.yml)
 
-> **Note:** Code scanning requires GitHub Advanced Security (available for public repositories; must be enabled in repository settings, and requires a license for private repositories).
+> **Note:** This workflow currently keeps CodeQL upload disabled until repository code scanning is enabled. Semgrep continues to run on every PR, and CodeQL analysis still executes in CI for workflow validation.
 
 

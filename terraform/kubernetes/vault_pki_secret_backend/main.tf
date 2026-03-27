@@ -5,7 +5,8 @@ variable "cluster_name" {
 variable "organization" {
   description = "Organization name for certificate subject. Example: Example.net"
   type        = string
-  default     = "example.net"
+  default     = null
+  nullable    = true
 }
 
 variable "root_domain" {
@@ -18,6 +19,7 @@ variable "root_domain" {
 locals {
   default_lease_ttl_years = 1
   max_lease_ttl_years     = 11
+  organization            = coalesce(var.organization, var.root_domain)
   seconds_in_a_year       = 365 * 24 * 60 * 60
   seconds_in_an_hour      = 60 * 60
   vault_mount_path        = "pki_int_${var.cluster_name}"
@@ -34,7 +36,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "intermediate_ca_c
   depends_on            = [vault_mount.intermediate]
   backend               = vault_mount.intermediate.path
   type                  = "internal"
-  common_name           = "${var.cluster_name} ${var.organization} Intermediate CA"
+  common_name           = "${var.cluster_name} ${local.organization} Intermediate CA"
   add_basic_constraints = true
   key_type              = "ec"
   key_bits              = 256

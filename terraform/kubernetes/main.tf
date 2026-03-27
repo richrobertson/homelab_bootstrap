@@ -32,9 +32,10 @@ module "nodes" {
   source        = "./nodes"
   fault_domains = var.fault_domains
 
-  cluster_short_name = var.environment_short_name
-  proxmox_ve_nodes   = var.proxmox_ve_nodes
-  dns_auth_server    = var.dns_auth_server
+  cluster_short_name       = var.environment_short_name
+  proxmox_ve_nodes         = var.proxmox_ve_nodes
+  dns_auth_server          = var.dns_auth_server
+  authoritative_nameserver = var.authoritative_nameserver
   dns = {
     domain = "${var.environment_name}.${var.root_domain}"
     servers = {
@@ -59,6 +60,7 @@ module "nodes" {
 module "vault_pki_secret_backend" {
   source       = "./vault_pki_secret_backend"
   cluster_name = var.cluster_name
+  organization = var.organization
   root_domain  = var.root_domain
 }
 

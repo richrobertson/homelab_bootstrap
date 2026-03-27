@@ -50,13 +50,15 @@ locals {
 }
 
 module "dns_zone" {
-  source    = "../modules/dns_zone"
-  zone_name = local.dns_zone
+  source                           = "../modules/dns_zone"
+  zone_name                        = local.dns_zone
+  primary_authoritative_nameserver = var.dns_server
 }
 
 module "reverse_dns_zone" {
-  source    = "../modules/dns_zone"
-  zone_name = local.reverse_dns_zone
+  source                           = "../modules/dns_zone"
+  zone_name                        = local.reverse_dns_zone
+  primary_authoritative_nameserver = var.dns_server
 }
 
 resource "proxmox_virtual_environment_sdn_zone_vxlan" "l2_overlay" {
