@@ -72,6 +72,11 @@ variable "dns_auth_server" {
   })
 }
 
+variable "authoritative_nameserver" {
+  description = "Primary authoritative nameserver for delegated cluster zones. Example: ns1.example.net"
+  type        = string
+}
+
 variable "dns" {
   type = object({
     domain = string

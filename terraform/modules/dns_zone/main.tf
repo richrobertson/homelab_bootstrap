@@ -15,8 +15,8 @@ variable "zone_name" {
 }
 
 variable "primary_authoritative_nameserver" {
-  type    = string
-  default = "subns.myrobertson.net."
+  type        = string
+  description = "Primary authoritative nameserver for the DNS zone. Example: ns.example.net."
 }
 
 locals {

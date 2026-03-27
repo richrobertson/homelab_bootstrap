@@ -17,6 +17,8 @@ module "nodes" {
   worker_count        = 3
   worker_cpu_cores    = 12
   worker_memory_in_gb = 12
+  dns_domain          = var.root_domain
+  dns_servers         = var.default_dns_servers
 
 }
 
@@ -29,4 +31,6 @@ module "firewall" {
   lan_network_bridge   = "dmz"
   wan_network_bridge   = "vmbr1"
   wan_network_vlan_tag = 7
+  dns_domain           = var.root_domain
+  dns_servers          = var.default_dns_servers
 }

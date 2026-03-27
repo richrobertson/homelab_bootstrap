@@ -3,6 +3,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "root_domain" {
+  description = "Root domain for cluster FQDN. Example: example.net"
+  type        = string
+  default     = "example.net"
+}
+
 variable "node_data" {
   description = "A map of node data"
   type = object({

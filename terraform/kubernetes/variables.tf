@@ -6,6 +6,24 @@ variable "environment_short_name" {
   type = string
 }
 
+variable "root_domain" {
+  description = "Root domain for the cluster infrastructure. Example: example.net"
+  type        = string
+  default     = "example.net"
+}
+
+variable "organization" {
+  description = "Organization name for PKI subjects. Defaults to root_domain when null."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
+variable "authoritative_nameserver" {
+  description = "Primary authoritative nameserver for delegated cluster zones. Example: ns1.example.net"
+  type        = string
+}
+
 variable "cluster_name" {
   description = "The name of the cluster (used for path in repo)"
   type        = string

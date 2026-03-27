@@ -32,11 +32,12 @@ module "nodes" {
   source        = "./nodes"
   fault_domains = var.fault_domains
 
-  cluster_short_name = var.environment_short_name
-  proxmox_ve_nodes   = var.proxmox_ve_nodes
-  dns_auth_server    = var.dns_auth_server
+  cluster_short_name       = var.environment_short_name
+  proxmox_ve_nodes         = var.proxmox_ve_nodes
+  dns_auth_server          = var.dns_auth_server
+  authoritative_nameserver = var.authoritative_nameserver
   dns = {
-    domain = "${var.environment_name}.myrobertson.net"
+    domain = "${var.environment_name}.${var.root_domain}"
     servers = {
       ipv4_addresses = var.dns_server.ipv4_addresses
       ipv6_addresses = var.dns_server.ipv6_addresses
@@ -59,12 +60,15 @@ module "nodes" {
 module "vault_pki_secret_backend" {
   source       = "./vault_pki_secret_backend"
   cluster_name = var.cluster_name
+  organization = var.organization
+  root_domain  = var.root_domain
 }
 
 module "talos_cluster" {
   depends_on   = [module.nodes]
   source       = "./talos"
   cluster_name = var.cluster_name
+  root_domain  = var.root_domain
   node_data = {
     controlplanes = {
       for k, v in var.fault_domains :

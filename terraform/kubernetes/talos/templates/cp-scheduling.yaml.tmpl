@@ -3,6 +3,6 @@ cluster:
 machine:
     registries:
         config:
-            ${environment_name}.myrobertson.net:
+            ${environment_name}.${root_domain}:
                 tls:
                     insecureSkipVerify: %{ if environment_name == "dev" }true%{ else }false%{ endif }

@@ -36,4 +36,6 @@ module "firewall_vms" {
     }
   ]
   cloud_image_id = "cephfs:import/${local.cloud_image_name}"
+  dns_domain     = var.dns_domain
+  dns_servers    = var.dns_servers
 }

@@ -39,6 +39,8 @@ module "control_plane_vms" {
     }
   ]
   cloud_image_id = "cephfs:import/nocloud-amd64.raw"
+  dns_domain     = var.dns_domain
+  dns_servers    = var.dns_servers
 }
 
 
@@ -59,6 +61,8 @@ module "worker_vms" {
     }
   ]
   cloud_image_id = "cephfs:import/nocloud-amd64.raw"
+  dns_domain     = var.dns_domain
+  dns_servers    = var.dns_servers
 }
 
 module "talos_cluster" {

@@ -45,14 +45,18 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "myrobertson-homelab-terraform"
-    region = "us-west-2"
-    key    = "base/terraform.tfstate"
+    # Backend settings are intentionally not hardcoded for public use.
+    # Configure with -backend-config flags or environment-specific backend config files.
+    # Example:
+    # terraform init \
+    #   -backend-config="bucket=my-homelab-terraform-state" \
+    #   -backend-config="region=us-west-2" \
+    #   -backend-config="key=base/terraform.tfstate"
   }
 }
 
 provider "proxmox" {
-  endpoint  = "https://cl0.myrobertson.net:8006/api2/json"
+  endpoint  = var.proxmox_endpoint
   api_token = data.vault_kv_secret_v2.proxmox_token.data["api_token"]
   insecure  = var.proxmox_insecure
 }

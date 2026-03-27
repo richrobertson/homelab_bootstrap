@@ -1,5 +1,5 @@
 locals {
-  cluster_fqdn     = "cp.${var.cluster_name}.myrobertson.net"
+  cluster_fqdn     = "cp.${var.cluster_name}.${var.root_domain}"
   cluster_endpoint = "https://${local.cluster_fqdn}:6443"
   environment_name = var.cluster_name == "development" ? "dev" : var.cluster_name
   //machine_secrets = yamlencode(var.talos_secrets_yaml)
@@ -99,6 +99,7 @@ resource "talos_machine_configuration_apply" "controlplane" {
     }),
     templatefile("${path.module}/templates/cp-scheduling.yaml.tmpl", {
       environment_name = local.environment_name
+      root_domain      = var.root_domain
     }),
     file("${path.module}/files/metrics-server.yaml"),
     file("${path.module}/files/rotate-server-certificates.yaml"),

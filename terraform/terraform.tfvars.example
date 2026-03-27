@@ -1,0 +1,56 @@
+# Example terraform.tfvars - Copy and customize for your environment
+# 
+# IMPORTANT: This file contains sensitive infrastructure configuration.
+# - Copy this to terraform/terraform.tfvars (which is gitignored)
+# - NEVER commit terraform/terraform.tfvars to version control
+# - Update all values with your actual infrastructure details
+# - Replace example.net with your actual domain
+
+# ============================================================================
+# REQUIRED PROVIDER CONFIGURATION
+# ============================================================================
+
+# Proxmox Infrastructure
+proxmox_endpoint = "https://pve.example.net:8006/api2/json"
+proxmox_insecure = false  # Set to true ONLY for development with self-signed certs
+
+# Root domain for all infrastructure
+root_domain = "example.net"
+
+# DNS Configuration (for gssapi-based DNS updates)
+dns_update_server = "dns01.example.net"
+dns_realm         = "EXAMPLE.NET"
+
+# Default DNS resolvers for VM cloud-init
+default_dns_servers = ["203.0.113.201", "203.0.113.202"]
+
+# Windows Active Directory / ADCS
+adcs_host = "dc1.example.net"
+
+# ============================================================================
+# STACK-SPECIFIC VARIABLES
+# ============================================================================
+# Additional variables for the standalone stacks under terraform/kubernetes,
+# terraform/networking, and terraform/substrate should be defined in per-stack
+# tfvars files for those directories.
+
+# ============================================================================
+# NOTES
+# ============================================================================
+# 1. IP addresses above use RFC 5737 TEST-NET-3 (203.0.113.0/24)
+#    - Replace with actual IP addresses for your infrastructure
+#    - Or generate appropriate IPs from your infrastructure's CIDR blocks
+#
+# 2. Vault credentials (tokens, API keys) should be:
+#    - Stored in Vault, not in this file
+#    - Referenced via Jenkins credentials or environment variables
+#    - See SECURITY.md for credential management best practices
+#
+# 3. S3 Backend configuration:
+#    - Provide via command-line: -backend-config="bucket=your-bucket"
+#    - Or configure via environment variables
+#    - See PUBLIC_RELEASE_GUIDE.md for detailed backend setup
+#
+# 4. For more variables, see:
+#    - terraform/variables.tf (root module)
+#    - per-stack variables.tf files in terraform/*/

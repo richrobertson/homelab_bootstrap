@@ -59,3 +59,13 @@ variable "ha_enabled" {
   type    = bool
   default = true
 }
+
+variable "dns_domain" {
+  description = "DNS domain for VM configuration. Example: example.net"
+  type        = string
+}
+
+variable "dns_servers" {
+  description = "List of DNS servers for VM configuration. Example: [\"203.0.113.1\", \"203.0.113.2\"]"
+  type        = list(string)
+}

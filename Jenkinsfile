@@ -5,7 +5,7 @@ pipeline {
         AWS_ACCESS_KEY_ID     = credentials('aws_homelab_access_key')
         AWS_SECRET_ACCESS_KEY = credentials('aws_homelab_secret_access_key')
         VAULT_CACERT          = '/etc/ssl/certs/ca-certificates.crt'
-        VAULT_ADDR            = 'https://vault.myrobertson.net:8200'
+        VAULT_ADDR            = credentials('vault_addr')
         VAULT_TOKEN           = credentials('vault_token')
         TERRAFORM_PLAN_OUTPUT = ''
     }
@@ -21,7 +21,17 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                sh 'cd terraform && terraform init'
+                sh '''
+                    cd terraform
+                    if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_REGION" ] && [ -n "$TF_STATE_KEY" ]; then
+                        terraform init \
+                            -backend-config="bucket=$TF_STATE_BUCKET" \
+                            -backend-config="region=$TF_STATE_REGION" \
+                            -backend-config="key=$TF_STATE_KEY"
+                    else
+                        terraform init -backend=false
+                    fi
+                '''
             }
         }
         stage('Terraform Workspace (if not main)') {
@@ -31,7 +41,21 @@ pipeline {
                 }
             }
             steps {
-                sh 'cd terraform && terraform workspace select -or-create ' + env.BRANCH_NAME + ' && terraform init'
+                script {
+                    def tfWorkspace = env.BRANCH_NAME.replaceAll('[^0-9A-Za-z_-]', '-')
+                    sh """
+                        cd terraform
+                        terraform workspace select -or-create "${tfWorkspace}"
+                        if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_REGION" ] && [ -n "$TF_STATE_KEY" ]; then
+                            terraform init \
+                                -backend-config="bucket=$TF_STATE_BUCKET" \
+                                -backend-config="region=$TF_STATE_REGION" \
+                                -backend-config="key=$TF_STATE_KEY"
+                        else
+                            terraform init -backend=false
+                        fi
+                    """
+                }
             }
         }
         stage('Terraform plan') {

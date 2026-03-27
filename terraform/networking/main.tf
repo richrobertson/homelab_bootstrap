@@ -43,20 +43,22 @@ data "dns_a_record_set" "peers" {
 
 
 locals {
-  dns_zone         = "${var.environment_name}.myrobertson.net"
+  dns_zone         = "${var.environment_name}.${var.root_domain}"
   evpn_controller  = "pve"
   ipam             = "netbox"
   reverse_dns_zone = "10.in-addr.arpa"
 }
 
 module "dns_zone" {
-  source    = "../modules/dns_zone"
-  zone_name = local.dns_zone
+  source                           = "../modules/dns_zone"
+  zone_name                        = local.dns_zone
+  primary_authoritative_nameserver = var.dns_server
 }
 
 module "reverse_dns_zone" {
-  source    = "../modules/dns_zone"
-  zone_name = local.reverse_dns_zone
+  source                           = "../modules/dns_zone"
+  zone_name                        = local.reverse_dns_zone
+  primary_authoritative_nameserver = var.dns_server
 }
 
 resource "proxmox_virtual_environment_sdn_zone_vxlan" "l2_overlay" {

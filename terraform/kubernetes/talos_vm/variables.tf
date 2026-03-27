@@ -77,9 +77,10 @@ variable "dns" {
     servers = list(string)
   })
   default = {
-    domain  = "myrobertson.net"
-    servers = ["192.168.7.202"]
+    domain  = "example.net"
+    servers = ["203.0.113.202"]
   }
+  description = "DNS configuration. Use example values and update in terraform.tfvars or environment-specific config."
 }
 
 variable "skip_user_data_file" {

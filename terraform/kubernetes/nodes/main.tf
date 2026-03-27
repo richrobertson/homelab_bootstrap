@@ -9,9 +9,10 @@ terraform {
 }
 
 module "control_plane_subnet_domains" {
-  for_each  = var.fault_domains
-  source    = "../../modules/dns_zone"
-  zone_name = "cp.${each.key}.${var.dns.domain}"
+  for_each                         = var.fault_domains
+  source                           = "../../modules/dns_zone"
+  zone_name                        = "cp.${each.key}.${var.dns.domain}"
+  primary_authoritative_nameserver = var.authoritative_nameserver
 }
 
 module "control_plane_vms" {
@@ -90,9 +91,10 @@ module "control_plane_host_records" {
 
 
 module "data_plane_subnet_domains" {
-  for_each  = var.fault_domains
-  source    = "../../modules/dns_zone"
-  zone_name = "dp.${each.key}.${var.dns.domain}"
+  for_each                         = var.fault_domains
+  source                           = "../../modules/dns_zone"
+  zone_name                        = "dp.${each.key}.${var.dns.domain}"
+  primary_authoritative_nameserver = var.authoritative_nameserver
 }
 
 module "worker_vms" {
@@ -142,7 +144,7 @@ module "data_plane_host_records" {
     zone_name = var.dns.domain
     name =  "grafana"
     type = "a"
-    records = ["192.168.7.151"]
+    records = ["203.0.113.151"]
   }
 } */
 
