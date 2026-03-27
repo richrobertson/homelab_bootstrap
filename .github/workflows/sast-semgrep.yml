@@ -33,11 +33,12 @@ jobs:
         run: semgrep scan --config auto .
 
   semgrep-main:
-    name: Run Semgrep SAST (Main/Scheduled)
+    name: Run Semgrep SAST (Main/Scheduled/Manual)
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
       security-events: write
 
     steps:
