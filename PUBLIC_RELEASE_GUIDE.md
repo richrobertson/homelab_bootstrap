@@ -21,7 +21,7 @@ The following personal/internal infrastructure values have been replaced with va
 | DNS Realm | `myrobertson.net` | Variable: `var.dns_realm` |
 | S3 Bucket | `myrobertson-homelab-terraform` | Updated backend config instructions |
 | Internal IPs | `192.168.x.x`, `10.x.x.x` | Example values or variable-based |
-| Organization Name | `MyRobertson.net` | Variable: `var.organization` (default varies by module; commonly derived from `var.root_domain`) |
+| Organization Name | `Example.net` | Variable: `var.organization` (default varies by module—often null or derived from `var.root_domain`) |
 
 ### 2. Variables Added
 
@@ -29,10 +29,11 @@ New variables for environment-specific configuration:
 
 **Main Terraform variables** (`terraform/variables.tf`):
 - `proxmox_endpoint` - Proxmox API URL
-- `dns_update_server` - DNS server for GSSAPI DNS updates
+- `dns_update_server` - DNS server hostname/IP for GSSAPI DNS updates
 - `dns_realm` - Kerberos realm for authentication
 - `adcs_host` - Microsoft ADCS server hostname
-- `root_domain` - Root domain for cluster infrastructure
+- `root_domain` - Root domain for cluster infrastructure (default: `example.net`)
+- `default_dns_servers` - Default upstream DNS resolvers for VM cloud-init
 
 **Kubernetes module variables** (`terraform/kubernetes/variables.tf`):
 - `root_domain` - Used throughout cluster DNS configuration
@@ -71,6 +72,7 @@ Generic example values have been used where appropriate:
    dns_realm        = "YOURDOMAIN.COM"
    adcs_host        = "dc1.yourdomain.com"
    root_domain      = "yourdomain.com"
+   default_dns_servers = ["8.8.8.8", "1.1.1.1"]
    
    # Add other environment-specific variables as needed
    ```
@@ -84,7 +86,7 @@ Generic example values have been used where appropriate:
    terraform init \
      -backend-config="bucket=your-terraform-state-bucket" \
      -backend-config="region=us-west-2" \
-       -backend-config="key=base/terraform.tfstate"
+     -backend-config="key=terraform/state/homelab_bootstrap.tfstate"
    ```
 
 3. **Configure Jenkins**

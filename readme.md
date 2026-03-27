@@ -75,7 +75,7 @@ Essential reading before deployment:
 	terraform init \
 	  -backend-config="bucket=your-terraform-state-bucket" \
 	  -backend-config="region=us-west-2" \
-	  -backend-config="key=base/terraform.tfstate"
+	  -backend-config="key=terraform/state/homelab_bootstrap.tfstate"
 	terraform plan
 	```
 
