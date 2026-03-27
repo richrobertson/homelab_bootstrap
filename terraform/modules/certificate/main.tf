@@ -38,8 +38,14 @@ variable "vault_pki_role" {
   type        = string
 }
 
+variable "organization" {
+  description = "Organization name for certificate subject. Example: Example, Inc"
+  type        = string
+  default     = "Example, Inc"
+}
+
 locals {
-  organization = "myrobertson.net"
+  organization = var.organization
 }
 
 resource "tls_cert_request" "example" {

@@ -2,6 +2,18 @@ variable "cluster_name" {
   type = string
 }
 
+variable "organization" {
+  description = "Organization name for certificate subject. Example: Example.net"
+  type        = string
+  default     = "example.net"
+}
+
+variable "root_domain" {
+  description = "Root domain for certificate allowed_domains. Example: example.net"
+  type        = string
+  default     = "example.net"
+}
+
 
 locals {
   default_lease_ttl_years = 1
@@ -22,7 +34,7 @@ resource "vault_pki_secret_backend_intermediate_cert_request" "intermediate_ca_c
   depends_on            = [vault_mount.intermediate]
   backend               = vault_mount.intermediate.path
   type                  = "internal"
-  common_name           = "${var.cluster_name} MyRobertson.net Intermediate CA"
+  common_name           = "${var.cluster_name} ${var.organization} Intermediate CA"
   add_basic_constraints = true
   key_type              = "ec"
   key_bits              = 256
@@ -61,7 +73,7 @@ resource "vault_pki_secret_backend_role" "role" {
   allow_ip_sans      = true
   key_type           = "ec"
   key_bits           = 256
-  allowed_domains    = ["${var.cluster_name}.myrobertson.net", "myrobertson.net"]
+  allowed_domains    = ["${var.cluster_name}.${var.root_domain}", var.root_domain]
   allow_subdomains   = true
   allow_bare_domains = true
   allow_any_name     = false

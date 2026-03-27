@@ -6,9 +6,9 @@ locals {
 
 provider "dns" {
   update {
-    server = "myrobertson.net"
+    server = var.dns_zone
     gssapi {
-      realm    = "myrobertson.net"
+      realm    = var.dns_realm
       username = data.vault_kv_secret_v2.windows_domain_admin.data["username"]
       password = data.vault_kv_secret_v2.windows_domain_admin.data["password"]
     }
@@ -39,7 +39,7 @@ provider "github" {
 provider "powerdns" {}
 
 provider "microsoftadcs" {
-  host     = "dc1.myrobertson.net"
+  host     = var.adcs_host
   username = data.vault_kv_secret_v2.windows_domain_admin.data["username"]
   password = data.vault_kv_secret_v2.windows_domain_admin.data["password"]
   use_ntlm = true

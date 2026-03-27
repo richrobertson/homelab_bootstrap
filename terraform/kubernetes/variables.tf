@@ -6,6 +6,12 @@ variable "environment_short_name" {
   type = string
 }
 
+variable "root_domain" {
+  description = "Root domain for the cluster infrastructure. Example: example.net"
+  type        = string
+  default     = "example.net"
+}
+
 variable "cluster_name" {
   description = "The name of the cluster (used for path in repo)"
   type        = string

@@ -142,7 +142,7 @@ module "data_plane_host_records" {
     zone_name = var.dns.domain
     name =  "grafana"
     type = "a"
-    records = ["192.168.7.151"]
+    records = ["203.0.113.151"]
   }
 } */
 

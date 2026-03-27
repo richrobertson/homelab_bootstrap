@@ -5,11 +5,11 @@ module "vm" {
   name           = "subns"
   cloud_image_id = var.cloud_image_id
   networks = [{
-    bridge      = "vmbr1"
+    bridge      = var.network_bridge
     firewall    = false
-    vlan_tag    = 7
-    ip4_address = "192.168.7.201/24"
-    ip4_gateway = "192.168.7.1"
+    vlan_tag    = var.network_vlan_id
+    ip4_address = var.ip4_address
+    ip4_gateway = var.ip4_gateway
   }]
   disk_size           = "40"
   node_name           = "pve3"

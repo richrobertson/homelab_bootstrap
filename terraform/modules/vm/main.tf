@@ -73,8 +73,8 @@ resource "proxmox_virtual_environment_vm" "vm" {
     datastore_id = "p0"
     interface    = "ide0"
     dns {
-      domain  = "myrobertson.net"
-      servers = ["192.168.1.245", "192.168.1.244"]
+      domain  = var.dns_domain
+      servers = var.dns_servers
     }
 
     dynamic "ip_config" {

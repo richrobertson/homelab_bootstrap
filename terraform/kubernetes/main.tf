@@ -36,7 +36,7 @@ module "nodes" {
   proxmox_ve_nodes   = var.proxmox_ve_nodes
   dns_auth_server    = var.dns_auth_server
   dns = {
-    domain = "${var.environment_name}.myrobertson.net"
+    domain = "${var.environment_name}.${var.root_domain}"
     servers = {
       ipv4_addresses = var.dns_server.ipv4_addresses
       ipv6_addresses = var.dns_server.ipv6_addresses

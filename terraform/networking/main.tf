@@ -43,7 +43,7 @@ data "dns_a_record_set" "peers" {
 
 
 locals {
-  dns_zone         = "${var.environment_name}.myrobertson.net"
+  dns_zone         = "${var.environment_name}.${var.root_domain}"
   evpn_controller  = "pve"
   ipam             = "netbox"
   reverse_dns_zone = "10.in-addr.arpa"

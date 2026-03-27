@@ -45,14 +45,16 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "myrobertson-homelab-terraform"
+    # Configure with your S3 bucket via -backend-config flag or environment variables
+    # Example: -backend-config="bucket=my-homelab-terraform-state"
+    bucket = "your-terraform-state-bucket"
     region = "us-west-2"
     key    = "base/terraform.tfstate"
   }
 }
 
 provider "proxmox" {
-  endpoint  = "https://cl0.myrobertson.net:8006/api2/json"
+  endpoint  = var.proxmox_endpoint
   api_token = data.vault_kv_secret_v2.proxmox_token.data["api_token"]
   insecure  = var.proxmox_insecure
 }
