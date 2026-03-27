@@ -13,7 +13,7 @@ jobs:
   analyze:
     name: CodeQL Analysis
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.timeout-minutes }}
+    timeout-minutes: ${{ matrix['timeout-minutes'] }}
     permissions:
       actions: read
       contents: read

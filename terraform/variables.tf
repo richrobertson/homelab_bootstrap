@@ -31,6 +31,7 @@ variable "adcs_host" {
 variable "root_domain" {
   description = "Root DNS domain used for VM cloud-init search domain. Example: example.net"
   type        = string
+  default     = "example.net"
 }
 
 variable "default_dns_servers" {
