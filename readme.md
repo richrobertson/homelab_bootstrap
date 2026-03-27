@@ -5,7 +5,7 @@
 
 `homelab_bootstrap` is the first-stage cluster bootstrap and orchestration repository for a homelab environment. It is responsible for provisioning the foundational infrastructure and Kubernetes cluster using Terraform, before handing off to GitOps management (via Flux). This repository automates the setup of VMs, networking, storage, and initial Kubernetes control plane, integrating with Vault for secrets and PowerDNS for DNS management.
 
-### Key Features
+## Key Features
 - Automated cluster and infrastructure provisioning using Terraform
 - Modular structure for substrate (VMs, storage), networking, Kubernetes, firewall, and Flux bootstrap
 - Secure secrets management via Vault
@@ -56,5 +56,17 @@ This repository is one part of a shared homelab stack:
 - [homelab_bootstrap](https://github.com/richrobertson/homelab_bootstrap) - first-stage cluster bootstrap/orchestration before Flux management.
 - [homelab_ansible](https://github.com/richrobertson/homelab_ansible) - host and node configuration automation outside Kubernetes manifests.
 - [homelab_flux](https://github.com/richrobertson/homelab_flux) - in-cluster GitOps state (apps, controllers, configs, and gateway resources).
+
+## Security (SAST)
+
+This repository runs [Semgrep](https://semgrep.dev/) as a Static Application Security Testing (SAST) tool via GitHub Actions on every push and pull request to `main`/`master`, plus a weekly scheduled scan.
+
+SARIF results are uploaded to **GitHub Security** for push/scheduled/manual runs (PR runs still scan but do not upload SARIF) and can be viewed under:
+
+> **Repository → Security → Code scanning alerts**
+
+The workflow file: [.github/workflows/sast-semgrep.yml](.github/workflows/sast-semgrep.yml)
+
+> **Note:** Code scanning requires GitHub Advanced Security (available for public repositories; must be enabled in repository settings, and requires a license for private repositories).
 
 
