@@ -24,7 +24,7 @@ Be respectful, inclusive, and professional in all interactions. We're building s
    - Use generic domain names for examples: `example.com`, `example.net`
 
 3. **Review Checklist**:
-   - [ ] No hardcoded IP addresses (except example IPs from RFC 5737)
+   - [ ] No new hardcoded IP addresses (except RFC 5737 examples or RFC1918 ranges that are explicitly part of homelab network design); prefer variables for configurable addresses
    - [ ] No hardcoded domain names (except `example.com`, `example.net`, `example.org`)
    - [ ] No credentials or API keys
    - [ ] No personal information

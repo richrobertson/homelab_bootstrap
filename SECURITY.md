@@ -43,9 +43,9 @@ If you discover a security vulnerability in this repository, please report it re
 
 #### Scanning for Secrets
 This repository is scanned using:
-- `git-secrets` or similar tools (configure: `git config core.hooksPath .githooks`)
+- Secret-scanning tools such as `git-secrets` (installed and configured locally by each developer)
 - Regular manual audits
-- Secret scanning in CI/CD pipelines
+- Secret scanning in CI/CD pipelines (for example, GitHub Advanced Security or equivalent tooling)
 
 #### Code Review
 All changes go through:

@@ -14,7 +14,7 @@
 3. **Replace all default example values** with your infrastructure specifics
 4. **Never commit credentials or secrets** to the repository
 
-All hardcoded infrastructure values (domain names, IP addresses, service endpoints) have been replaced with Terraform variables. You **must** provide your actual configuration via `terraform.tfvars` before deploying.
+Infrastructure-specific values have been reviewed and many hardcoded values have been replaced with Terraform variables or example defaults. You **must** provide your actual configuration via `terraform.tfvars` before deploying.
 
 ## Key Features
 - Automated cluster and infrastructure provisioning using Terraform
@@ -22,8 +22,8 @@ All hardcoded infrastructure values (domain names, IP addresses, service endpoin
 - Secure secrets management via Vault (references, not credentials stored in code)
 - DNS automation with PowerDNS
 - Designed for reproducible, idempotent cluster creation
-- ✅ All hardcoded infrastructure values removed
-- ✅ No secrets in repository history
+- ✅ Infrastructure values reviewed and parameterized where identified
+- ✅ Secret scanning integrated into CI and release hardening workflow
 - ✅ Comprehensive security documentation
 
 ## Documentation

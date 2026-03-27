@@ -4,7 +4,7 @@ This document outlines the changes made to prepare this repository for public re
 
 ## Overview
 
-This repository has been carefully reviewed and sanitized to remove hardcoded infrastructure-specific values, credentials, and internal domain names. All configurable values have been converted to variables with sensible example defaults.
+This repository has been reviewed and hardened for public release by replacing many infrastructure-specific values with variables or examples and documenting safe deployment practices. Some defaults intentionally remain to represent homelab network design patterns.
 
 ## Changes Made
 
@@ -116,7 +116,7 @@ Retrieve these using `data.vault_kv_secret_v2` references (already configured in
 
 ### 1. Variables File Security
 
-**Important**: While `terraform.tfvars` is included in `.gitignore`, ensure you:
+**Important**: `terraform.tfvars` and `terraform/terraform.tfvars` are included in `.gitignore`, and you should still ensure you:
 
 - Never commit credentials to the repository
 - Use environment variables or external secret management
@@ -169,12 +169,14 @@ Before deploying to production:
 
 ## Secret Scanning Results
 
-This repository has been scanned for accidentally committed secrets:
+Secrets scanning and hardening steps for this release included:
 
-✅ **No credentials found in repository history**
-✅ **All hardcoded infrastructure values removed**
-✅ **Example/placeholder values used throughout**
-✅ **All `.yaml` secrets files properly gitignored**
+✅ **A secrets scan was run on the current repository and history at the time of release; no credentials were detected by that scan**
+✅ **Infrastructure-specific hardcoded values were reviewed and replaced with variables or examples where identified**
+✅ **Example/placeholder values are used where possible and should be customized for your environment**
+✅ **`.yaml` secrets files and local `terraform.tfvars` files are configured to be gitignored in this repository**
+
+You should perform your own secret scanning (for example, with GitHub Advanced Security, `trufflehog`, or similar tools) on your fork/clone and in CI/CD, and review the repository for environment-specific values before production use.
 
 ## Terraform State Security
 
@@ -182,6 +184,8 @@ The included `.gitignore` properly excludes:
 
 ```
 **/secrets.yaml
+terraform.tfvars
+terraform/terraform.tfvars
 terraform/.terraform/*
 terraform/s3.json
 terraform/terraform.tfstate

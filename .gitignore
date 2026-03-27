@@ -1,4 +1,6 @@
 **/secrets.yaml
+terraform.tfvars
+terraform/terraform.tfvars
 terraform/.terraform/*
 terraform/s3.json
 terraform/terraform.tfstate
