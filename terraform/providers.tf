@@ -6,7 +6,7 @@ locals {
 
 provider "dns" {
   update {
-    server = var.dns_zone
+    server = var.dns_update_server
     gssapi {
       realm    = var.dns_realm
       username = data.vault_kv_secret_v2.windows_domain_admin.data["username"]

@@ -43,3 +43,13 @@ variable "network_bridge" {
 variable "network_vlan_id" {
   type = number
 }
+
+variable "dns_domain" {
+  description = "DNS search domain for provisioned VMs."
+  type        = string
+}
+
+variable "dns_servers" {
+  description = "DNS resolver servers for provisioned VMs."
+  type        = list(string)
+}

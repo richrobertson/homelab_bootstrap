@@ -21,7 +21,17 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                sh 'cd terraform && terraform init'
+                sh '''
+                    cd terraform
+                    if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_REGION" ] && [ -n "$TF_STATE_KEY" ]; then
+                        terraform init \
+                            -backend-config="bucket=$TF_STATE_BUCKET" \
+                            -backend-config="region=$TF_STATE_REGION" \
+                            -backend-config="key=$TF_STATE_KEY"
+                    else
+                        terraform init -backend=false
+                    fi
+                '''
             }
         }
         stage('Terraform Workspace (if not main)') {
@@ -31,7 +41,18 @@ pipeline {
                 }
             }
             steps {
-                sh 'cd terraform && terraform workspace select -or-create ' + env.BRANCH_NAME + ' && terraform init'
+                sh """
+                    cd terraform
+                    terraform workspace select -or-create ${env.BRANCH_NAME}
+                    if [ -n "$TF_STATE_BUCKET" ] && [ -n "$TF_STATE_REGION" ] && [ -n "$TF_STATE_KEY" ]; then
+                        terraform init \
+                            -backend-config="bucket=$TF_STATE_BUCKET" \
+                            -backend-config="region=$TF_STATE_REGION" \
+                            -backend-config="key=$TF_STATE_KEY"
+                    else
+                        terraform init -backend=false
+                    fi
+                """
             }
         }
         stage('Terraform plan') {

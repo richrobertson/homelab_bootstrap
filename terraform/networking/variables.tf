@@ -18,6 +18,11 @@ variable "environment_short_name" {
   type = string
 }
 
+variable "root_domain" {
+  description = "Root domain used to build environment DNS zones. Example: example.net"
+  type        = string
+}
+
 variable "dns_server" {
   type = string
 }

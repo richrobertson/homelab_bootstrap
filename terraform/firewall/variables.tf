@@ -37,3 +37,13 @@ variable "memory_in_gb" {
   default = 4
 
 }
+
+variable "dns_domain" {
+  description = "DNS search domain for provisioned VMs."
+  type        = string
+}
+
+variable "dns_servers" {
+  description = "DNS resolver servers for provisioned VMs."
+  type        = list(string)
+}

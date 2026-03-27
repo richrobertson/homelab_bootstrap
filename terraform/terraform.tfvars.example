@@ -18,8 +18,12 @@ proxmox_insecure = false  # Set to true ONLY for development with self-signed ce
 root_domain = "example.net"
 
 # DNS Configuration (for gssapi-based DNS updates)
-dns_zone  = "example.net"
-dns_realm = "EXAMPLE.NET"
+dns_zone          = "example.net"
+dns_update_server = "dns01.example.net"
+dns_realm         = "EXAMPLE.NET"
+
+# Default DNS resolvers for VM cloud-init
+default_dns_servers = ["203.0.113.201", "203.0.113.202"]
 
 # Windows Active Directory / ADCS
 adcs_host = "dc1.example.net"
@@ -42,6 +46,7 @@ substrate_network_bridge = "vmbr1"
 # Database VM
 database_ip_address = "203.0.113.200/24"
 database_ip_gateway = "203.0.113.1"
+substrate_ip_gateway = "203.0.113.1"
 
 # PowerDNS Authoritative Server
 powerdns_auth_ip_address = "203.0.113.201/24"

@@ -14,7 +14,12 @@ variable "proxmox_insecure" {
 }
 
 variable "dns_zone" {
-  description = "DNS zone for gssapi updates. Example: example.com"
+  description = "DNS zone name for infrastructure records. Example: example.com"
+  type        = string
+}
+
+variable "dns_update_server" {
+  description = "DNS server hostname/IP that accepts dynamic updates. Example: dns01.example.com"
   type        = string
 }
 
@@ -26,4 +31,14 @@ variable "dns_realm" {
 variable "adcs_host" {
   description = "Hostname of the Microsoft ADCS server. Example: dc1.example.com"
   type        = string
+}
+
+variable "root_domain" {
+  description = "Root DNS domain used for VM cloud-init search domain. Example: example.net"
+  type        = string
+}
+
+variable "default_dns_servers" {
+  description = "Default DNS resolver server IPs used for VM cloud-init."
+  type        = list(string)
 }

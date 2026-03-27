@@ -31,3 +31,13 @@ variable "network_bridge" {
   type        = string
   default     = "vmbr1"
 }
+
+variable "dns_domain" {
+  description = "DNS search domain for VM cloud-init."
+  type        = string
+}
+
+variable "dns_servers" {
+  description = "DNS resolver servers for VM cloud-init."
+  type        = list(string)
+}

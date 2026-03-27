@@ -31,3 +31,13 @@ variable "cloud_image_id" {
   description = "ID of the cloud image to download"
   type        = string
 }
+
+variable "dns_domain" {
+  description = "DNS search domain for VM cloud-init."
+  type        = string
+}
+
+variable "dns_servers" {
+  description = "DNS resolver servers for VM cloud-init."
+  type        = list(string)
+}

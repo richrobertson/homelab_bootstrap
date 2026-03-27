@@ -45,11 +45,13 @@ terraform {
   }
 
   backend "s3" {
-    # Configure with your S3 bucket via -backend-config flag or environment variables
-    # Example: -backend-config="bucket=my-homelab-terraform-state"
-    bucket = "your-terraform-state-bucket"
-    region = "us-west-2"
-    key    = "base/terraform.tfstate"
+    # Backend settings are intentionally not hardcoded for public use.
+    # Configure with -backend-config flags or environment-specific backend config files.
+    # Example:
+    # terraform init \
+    #   -backend-config="bucket=my-homelab-terraform-state" \
+    #   -backend-config="region=us-west-2" \
+    #   -backend-config="key=base/terraform.tfstate"
   }
 }
 

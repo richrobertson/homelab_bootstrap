@@ -113,15 +113,17 @@ This repository is one part of a shared homelab stack:
 - [homelab_ansible](https://github.com/richrobertson/homelab_ansible) - host and node configuration automation outside Kubernetes manifests.
 - [homelab_flux](https://github.com/richrobertson/homelab_flux) - in-cluster GitOps state (apps, controllers, configs, and gateway resources).
 
-## Security (SAST)
+## Security (Code scanning / SAST)
 
-This repository runs [Semgrep](https://semgrep.dev/) as a Static Application Security Testing (SAST) tool via GitHub Actions on every push and pull request to `main`/`master`, plus a weekly scheduled scan.
+This repository runs both [Semgrep](https://semgrep.dev/) and [GitHub CodeQL](https://docs.github.com/code-security/code-scanning) via GitHub Actions on push/pull requests to `main`/`master`, with scheduled scans as well.
 
-SARIF results are uploaded to **GitHub Security** for push/scheduled/manual runs (PR runs still scan but do not upload SARIF) and can be viewed under:
+SARIF/code-scanning results are available in **GitHub Security**:
 
 > **Repository → Security → Code scanning alerts**
 
-The workflow file: [.github/workflows/sast-semgrep.yml](.github/workflows/sast-semgrep.yml)
+Workflow files:
+- Semgrep: [.github/workflows/sast-semgrep.yml](.github/workflows/sast-semgrep.yml)
+- CodeQL: [.github/workflows/codeql.yml](.github/workflows/codeql.yml)
 
 > **Note:** Code scanning requires GitHub Advanced Security (available for public repositories; must be enabled in repository settings, and requires a license for private repositories).
 

@@ -14,6 +14,8 @@ module "vm" {
   disk_size           = "40"
   node_name           = "pve3"
   additional_packages = ["gpg"]
+  dns_domain          = var.dns_domain
+  dns_servers         = var.dns_servers
   ssh_public_key      = var.ssh_public_key
   ha_enabled          = true
 }

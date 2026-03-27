@@ -22,9 +22,15 @@ variable "database_ip_address" {
 }
 
 variable "database_ip_gateway" {
-  description = "IP gateway for substrate network. Example: 203.0.113.1"
+  description = "Deprecated: use substrate_ip_gateway. IP gateway for substrate network. Example: 203.0.113.1"
   type        = string
   default     = "203.0.113.1"
+}
+
+variable "substrate_ip_gateway" {
+  description = "IP gateway for substrate network shared by substrate VMs. Example: 203.0.113.1"
+  type        = string
+  default     = ""
 }
 
 variable "powerdns_auth_ip_address" {
@@ -37,4 +43,9 @@ variable "powerdns_recurse_ip_address" {
   description = "IP address for PowerDNS recursive server. Example: 203.0.113.202/24"
   type        = string
   default     = "203.0.113.202/24"
+}
+
+variable "root_domain" {
+  description = "Root DNS domain used for substrate VM cloud-init search domain."
+  type        = string
 }

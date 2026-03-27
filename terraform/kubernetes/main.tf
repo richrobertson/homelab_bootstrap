@@ -59,12 +59,14 @@ module "nodes" {
 module "vault_pki_secret_backend" {
   source       = "./vault_pki_secret_backend"
   cluster_name = var.cluster_name
+  root_domain  = var.root_domain
 }
 
 module "talos_cluster" {
   depends_on   = [module.nodes]
   source       = "./talos"
   cluster_name = var.cluster_name
+  root_domain  = var.root_domain
   node_data = {
     controlplanes = {
       for k, v in var.fault_domains :

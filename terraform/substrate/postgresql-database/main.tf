@@ -20,6 +20,8 @@ module "vm" {
     "echo \"host    all             all             ${cidrsubnet(var.ip4_address, 0, 0)}               scram-sha-256\" >> /etc/postgresql/17/main/pg_hba.conf",
     "systemctl restart postgresql"
   ]
+  dns_domain     = var.dns_domain
+  dns_servers    = var.dns_servers
   ssh_public_key = var.ssh_public_key
   ha_enabled     = true
 }
