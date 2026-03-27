@@ -4,6 +4,11 @@ variable "cloud_image_id" {
   type        = string
 }
 
+variable "node_name" {
+  description = "The name of the Proxmox node to deploy resources on."
+  type        = string
+}
+
 variable "ssh_public_key" {
   type = string
 }

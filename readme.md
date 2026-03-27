@@ -74,7 +74,8 @@ Essential reading before deployment:
 	cd terraform
 	terraform init \
 	  -backend-config="bucket=your-terraform-state-bucket" \
-	  -backend-config="region=us-west-2"
+	  -backend-config="region=us-west-2" \
+	  -backend-config="key=base/terraform.tfstate"
 	terraform plan
 	```
 

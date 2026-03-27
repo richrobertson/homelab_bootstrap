@@ -21,7 +21,7 @@ The following personal/internal infrastructure values have been replaced with va
 | DNS Realm | `myrobertson.net` | Variable: `var.dns_realm` |
 | S3 Bucket | `myrobertson-homelab-terraform` | Updated backend config instructions |
 | Internal IPs | `192.168.x.x`, `10.x.x.x` | Example values or variable-based |
-| Organization Name | `MyRobertson.net` | Variable: `var.organization` (default: `example.net`) |
+| Organization Name | `MyRobertson.net` | Variable: `var.organization` (default varies by module; commonly derived from `var.root_domain`) |
 
 ### 2. Variables Added
 
@@ -29,7 +29,7 @@ New variables for environment-specific configuration:
 
 **Main Terraform variables** (`terraform/variables.tf`):
 - `proxmox_endpoint` - Proxmox API URL
-- `dns_zone` - DNS zone for gssapi updates
+- `dns_update_server` - DNS server for GSSAPI DNS updates
 - `dns_realm` - Kerberos realm for authentication
 - `adcs_host` - Microsoft ADCS server hostname
 - `root_domain` - Root domain for cluster infrastructure
@@ -67,7 +67,7 @@ Generic example values have been used where appropriate:
    
    # Your infrastructure details
    proxmox_endpoint = "https://pve.yourdomain.com:8006/api2/json"
-   dns_zone         = "yourdomain.com"
+   dns_update_server = "dns01.yourdomain.com"
    dns_realm        = "YOURDOMAIN.COM"
    adcs_host        = "dc1.yourdomain.com"
    root_domain      = "yourdomain.com"
@@ -84,7 +84,7 @@ Generic example values have been used where appropriate:
    terraform init \
      -backend-config="bucket=your-terraform-state-bucket" \
      -backend-config="region=us-west-2" \
-     -backend-config="key=base/terraform.tfstate"
+       -backend-config="key=base/terraform.tfstate"
    ```
 
 3. **Configure Jenkins**

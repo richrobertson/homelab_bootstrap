@@ -33,8 +33,8 @@ terraform {
 }
 
 locals {
-  cloud_image_url     = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
-  cloud_image_url_old = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
+  cloud_image_url      = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+  cloud_image_url_old  = "https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2"
   substrate_ip_gateway = var.substrate_ip_gateway != "" ? var.substrate_ip_gateway : var.database_ip_gateway
   dns_servers          = [split("/", var.powerdns_auth_ip_address)[0], split("/", var.powerdns_recurse_ip_address)[0]]
 
@@ -43,7 +43,7 @@ locals {
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
   content_type        = "import"
   datastore_id        = "cephfs"
-  node_name           = "pve3"
+  node_name           = var.substrate_node_name
   url                 = local.cloud_image_url
   overwrite_unmanaged = true
 }
@@ -51,7 +51,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
 resource "proxmox_virtual_environment_download_file" "cloud_image_old" {
   content_type        = "import"
   datastore_id        = "cephfs"
-  node_name           = "pve3"
+  node_name           = var.substrate_node_name
   url                 = local.cloud_image_url_old
   overwrite_unmanaged = true
 }
@@ -65,34 +65,36 @@ module "database" {
   network_bridge  = var.substrate_network_bridge
   dns_domain      = var.root_domain
   dns_servers     = local.dns_servers
-  node_name       = "pve3"
+  node_name       = var.substrate_node_name
   hostname        = "subdb1"
   cloud_image_id  = proxmox_virtual_environment_download_file.cloud_image.id
 }
 
 module "powerdns_recurse_server" {
-  source         = "./powerdns-recurse"
-  depends_on     = [module.database]
-  ssh_public_key = var.ssh_public_key
-  cloud_image_id = proxmox_virtual_environment_download_file.cloud_image_old.id
+  source          = "./powerdns-recurse"
+  depends_on      = [module.database]
+  ssh_public_key  = var.ssh_public_key
+  cloud_image_id  = proxmox_virtual_environment_download_file.cloud_image_old.id
   ip4_address     = var.powerdns_recurse_ip_address
   ip4_gateway     = local.substrate_ip_gateway
   network_vlan_id = var.substrate_vlan_id
   network_bridge  = var.substrate_network_bridge
   dns_domain      = var.root_domain
   dns_servers     = local.dns_servers
+  node_name       = var.substrate_node_name
 }
 
 
 module "powerdns_auth_server" {
-  source         = "./powerdns-auth"
-  depends_on     = [module.powerdns_recurse_server]
-  ssh_public_key = var.ssh_public_key
-  cloud_image_id = proxmox_virtual_environment_download_file.cloud_image_old.id
+  source          = "./powerdns-auth"
+  depends_on      = [module.powerdns_recurse_server]
+  ssh_public_key  = var.ssh_public_key
+  cloud_image_id  = proxmox_virtual_environment_download_file.cloud_image_old.id
   ip4_address     = var.powerdns_auth_ip_address
   ip4_gateway     = local.substrate_ip_gateway
   network_vlan_id = var.substrate_vlan_id
   network_bridge  = var.substrate_network_bridge
   dns_domain      = var.root_domain
   dns_servers     = local.dns_servers
+  node_name       = var.substrate_node_name
 }

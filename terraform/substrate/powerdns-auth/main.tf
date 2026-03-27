@@ -12,7 +12,7 @@ module "vm" {
     ip4_gateway = var.ip4_gateway
   }]
   disk_size           = "40"
-  node_name           = "pve3"
+  node_name           = var.node_name
   additional_packages = ["gpg"]
   dns_domain          = var.dns_domain
   dns_servers         = var.dns_servers

@@ -4,9 +4,15 @@ variable "ssh_public_key" {
 }
 
 variable "substrate_vlan_id" {
-  description = "VLAN ID for substrate network. Example: 7"
+  description = "VLAN ID for substrate network. Example: 100"
   type        = number
   default     = 100
+}
+
+variable "substrate_node_name" {
+  description = "Proxmox node used for substrate VM placement and cloud image downloads. Example: pve1"
+  type        = string
+  default     = "pve1"
 }
 
 variable "substrate_network_bridge" {
