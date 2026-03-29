@@ -1,0 +1,47 @@
+name: Feature request
+description: Propose a scoped improvement to the repository
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for concrete repository improvements. Keep the proposal scoped and explain the operational value.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What limitation or pain point does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the behavior, API, or workflow you want.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other options did you evaluate?
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Operational impact
+      description: Describe expected benefits, tradeoffs, or migration concerns.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I checked existing issues before opening this request
+          required: true
+        - label: This request does not disclose secrets or sensitive infrastructure details
+          required: true

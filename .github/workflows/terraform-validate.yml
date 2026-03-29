@@ -1,0 +1,56 @@
+name: Terraform Validation
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+    paths:
+      - "terraform/**/*.tf"
+      - ".github/workflows/terraform-validate.yml"
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "terraform/**/*.tf"
+      - ".github/workflows/terraform-validate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.0
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -diff -recursive terraform
+
+      - name: Validate Terraform directories
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t dirs < <(
+            find terraform -type f -name '*.tf' -not -path '*/.terraform/*' \
+              | sed 's|/[^/]*$||' \
+              | sort -u
+          )
+
+          for dir in "${dirs[@]}"; do
+            echo "::group::${dir}"
+            terraform -chdir="${dir}" init -backend=false -input=false -no-color
+            terraform -chdir="${dir}" validate -no-color
+            echo "::endgroup::"
+          done

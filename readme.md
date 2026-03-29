@@ -33,6 +33,17 @@ Essential reading before deployment:
 - **[PUBLIC_RELEASE_GUIDE.md](PUBLIC_RELEASE_GUIDE.md)** - Configuration instructions and setup for your environment
 - **[SECURITY.md](SECURITY.md)** - Security best practices, hardening checklist, and vulnerability reporting
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines for code and security standards
+- **[SUPPORT.md](SUPPORT.md)** - Where to ask for help and what information to include
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Expected behavior for public collaboration
+
+## Community Health
+
+This repository includes public GitHub collaboration defaults so external contributors can work against a documented process:
+
+- GitHub issue templates for bug reports and feature requests
+- A pull request template with testing and security prompts
+- CODEOWNERS for review routing and ownership
+- A GitHub Actions Terraform validation workflow for pull requests
 
 ## Architecture
 
@@ -117,6 +128,8 @@ This repository is one part of a shared homelab stack:
 ## Security (Code scanning / SAST)
 
 This repository runs both [Semgrep](https://semgrep.dev/) and [GitHub CodeQL](https://docs.github.com/code-security/code-scanning) via GitHub Actions on push/pull requests to `main`/`master`, with scheduled scans as well.
+
+Terraform formatting and validation also run in GitHub Actions so pull requests have repository-native checks even when Jenkins is not available to external contributors.
 
 CodeQL analysis runs in CI for workflow validation. SARIF upload is currently disabled in `.github/workflows/codeql.yml` (`upload: false`), so no code scanning alerts are uploaded yet.
 

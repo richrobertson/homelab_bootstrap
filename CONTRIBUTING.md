@@ -103,6 +103,13 @@ git push origin feature/description-of-changes
 - Include the security checklist (see below)
 - Be open to review feedback
 
+### Issues and Discussions
+
+- Use the GitHub issue templates for bug reports and feature requests
+- Keep each issue focused on a single problem or proposal
+- Route sensitive security findings through [SECURITY.md](SECURITY.md), not public issues
+- Include enough detail for someone outside your environment to reproduce the problem
+
 ## PR Security Checklist Template
 
 Include this in your PR description:

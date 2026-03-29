@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support guidance
+    url: https://github.com/richrobertson/homelab_bootstrap/blob/main/SUPPORT.md
+    about: Read the support policy and issue-routing guidance before opening a request.
+  - name: Security policy
+    url: https://github.com/richrobertson/homelab_bootstrap/blob/main/SECURITY.md
+    about: Report vulnerabilities privately and avoid public disclosure.
