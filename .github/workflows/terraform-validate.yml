@@ -5,11 +5,13 @@ on:
     branches: ["main", "master"]
     paths:
       - "terraform/**/*.tf"
+      - "terraform/.terraform.lock.hcl"
       - ".github/workflows/terraform-validate.yml"
   push:
     branches: ["main", "master"]
     paths:
       - "terraform/**/*.tf"
+      - "terraform/.terraform.lock.hcl"
       - ".github/workflows/terraform-validate.yml"
   workflow_dispatch:
 
