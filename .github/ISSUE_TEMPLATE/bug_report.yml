@@ -1,0 +1,63 @@
+name: Bug report
+description: Report a reproducible problem in the repository
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Use this template for repository issues only. Do not include secrets or private infrastructure details.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect to happen instead?
+    validations:
+      required: true
+  - type: input
+    id: path
+    attributes:
+      label: Affected path
+      description: Which module, file, or Terraform path is involved?
+      placeholder: terraform/kubernetes
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reproducible set of steps.
+      placeholder: |
+        1. Run ...
+        2. Apply ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output
+      description: Paste sanitized logs, error messages, or plan output.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Tool versions
+      description: Include Terraform and any relevant provider or tool versions.
+      placeholder: Terraform 1.10.2, talosctl 1.9.1
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I removed secrets and private infrastructure details from this report
+          required: true
+        - label: I checked existing issues before opening this report
+          required: true
+        - label: This is not a security vulnerability report
+          required: true

@@ -2,23 +2,32 @@
 
 This document outlines security practices for this repository and guidance on reporting security vulnerabilities.
 
+## Supported Versions
+
+| Version / Branch | Supported |
+| --- | --- |
+| `main` | Yes |
+
 ## Reporting Security Vulnerabilities
 
 **DO NOT** open a public issue for security vulnerabilities.
 
 If you discover a security vulnerability in this repository, please report it responsibly:
 
-1. **Email**: [security@example.com](mailto:security@example.com) (Update with your contact)
-2. **Include**:
+1. **Preferred**: Use GitHub private vulnerability reporting for this repository if the option is enabled.
+2. **Fallback**: If private reporting is unavailable, contact the maintainer directly using the contact information published on the repository profile. Do not disclose exploit details in a public issue.
+3. **Include**:
    - Description of the vulnerability
    - Steps to reproduce (if applicable)
    - Potential impact
    - Suggested fix (if you have one)
 
-3. **Response Timeline**:
+4. **Response Targets**:
    - Acknowledgment within 24 hours
    - Initial assessment within 5 days
    - Fix and patched release attempt within 30 days
+
+Public issues are appropriate for non-sensitive hardening ideas, documentation fixes, or defense-in-depth improvements that do not expose a live vulnerability.
 
 ## Security Best Practices
 

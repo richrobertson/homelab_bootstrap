@@ -1,0 +1,6 @@
+# Default ownership and review routing for public contributions.
+
+* @richrobertson
+terraform/ @richrobertson
+cluster_configs/ @richrobertson
+.github/ @richrobertson
