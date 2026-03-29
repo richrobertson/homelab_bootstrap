@@ -39,5 +39,5 @@ jobs:
 
       - name: Validate root Terraform entrypoint
         run: |
-          terraform -chdir=terraform init -backend=false -lockfile=readonly -input=false -no-color
+          terraform -chdir=terraform init -backend=false -input=false -no-color
           terraform -chdir=terraform validate -no-color
