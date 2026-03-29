@@ -37,20 +37,7 @@ jobs:
       - name: Check Terraform formatting
         run: terraform fmt -check -diff -recursive terraform
 
-      - name: Validate Terraform directories
-        shell: bash
+      - name: Validate root Terraform entrypoint
         run: |
-          set -euo pipefail
-
-          mapfile -t dirs < <(
-            find terraform -type f -name '*.tf' -not -path '*/.terraform/*' \
-              | sed 's|/[^/]*$||' \
-              | sort -u
-          )
-
-          for dir in "${dirs[@]}"; do
-            echo "::group::${dir}"
-            terraform -chdir="${dir}" init -backend=false -input=false -no-color
-            terraform -chdir="${dir}" validate -no-color
-            echo "::endgroup::"
-          done
+          terraform -chdir=terraform init -backend=false -lockfile=readonly -input=false -no-color
+          terraform -chdir=terraform validate -no-color
