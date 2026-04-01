@@ -28,3 +28,9 @@ variable "node_data" {
 variable "vault_pki_secret_backend_path" {
   type = string
 }
+
+variable "talos_installer_image" {
+  description = "Optional Talos installer image to pin in generated machine config."
+  type        = string
+  default     = null
+}

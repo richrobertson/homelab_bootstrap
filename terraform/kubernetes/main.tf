@@ -49,12 +49,15 @@ module "nodes" {
   control_plane_cpu_cores       = var.kubernetes_nodes_resources["controlplane"].cpu_cores
   control_plane_memory_in_gb    = var.kubernetes_nodes_resources["controlplane"].memory_in_gb
   control_plane_subnets_by_fd   = var.control_plane_subnets_by_fd
+  control_plane_cloud_image_id  = var.control_plane_cloud_image_id
 
-  worker_cpu_cores       = var.kubernetes_nodes_resources["dataplane"].cpu_cores
-  worker_memory_in_gb    = var.kubernetes_nodes_resources["dataplane"].memory_in_gb
-  worker_network_bridge  = var.worker_network_bridge
-  worker_network_vlan_id = var.worker_network_vlan_id
-  worker_subnets_by_fd   = var.worker_subnets_by_fd
+  worker_cpu_cores        = var.kubernetes_nodes_resources["dataplane"].cpu_cores
+  worker_memory_in_gb     = var.kubernetes_nodes_resources["dataplane"].memory_in_gb
+  worker_network_bridge   = var.worker_network_bridge
+  worker_network_vlan_id  = var.worker_network_vlan_id
+  worker_subnets_by_fd    = var.worker_subnets_by_fd
+  worker_cloud_image_id   = var.worker_cloud_image_id
+  worker_host_pci_devices = var.worker_host_pci_devices
 }
 
 module "vault_pki_secret_backend" {
@@ -90,6 +93,7 @@ module "talos_cluster" {
     }
   }
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
+  talos_installer_image         = var.talos_installer_image
 }
 
 

@@ -10,6 +10,13 @@ locals {
   machine_secrets      = module.secrets.machine_secrets
   client_configuration = module.secrets.client_configuration
 
+  install_image_patch = var.talos_installer_image == null ? [] : [yamlencode({
+    machine = {
+      install = {
+        image = var.talos_installer_image
+      }
+    }
+  })]
 
   global_patches = [
     file("${path.module}/files/extraKernelArgs.yaml"),
@@ -34,7 +41,7 @@ data "talos_machine_configuration" "controlplane" {
   # Define cluster FQDN, endpoint, secrets, and configuration patches.
   # -----------------------------
   machine_secrets = local.machine_secrets
-  config_patches = concat(local.global_patches, [
+  config_patches = concat(local.global_patches, local.install_image_patch, [
     yamlencode({
       machine = {
         certSANs = concat(
@@ -56,12 +63,9 @@ data "talos_machine_configuration" "worker" {
   # Secrets Module
   # Retrieves machine and client secrets from Vault for Talos configuration.
   # -----------------------------
-  config_patches = concat(local.global_patches, [
+  config_patches = concat(local.global_patches, local.install_image_patch, [
     yamlencode({
       machine = {
-        nodeLabels = {
-          "intel.feature.node.kubernetes.io/gpu" = "true"
-        }
         certSANs = concat(
           [local.cluster_fqdn],
           [for k, v in var.node_data.controlplanes : v.ip4_address]

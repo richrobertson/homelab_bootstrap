@@ -113,7 +113,19 @@ resource "proxmox_virtual_environment_vm" "vm" {
     timeout = "100s"
   }
 
-
+  dynamic "hostpci" {
+    for_each = var.host_pci_devices
+    content {
+      device   = hostpci.value.device
+      id       = try(hostpci.value.id, null)
+      mapping  = try(hostpci.value.mapping, null)
+      mdev     = try(hostpci.value.mdev, null)
+      pcie     = try(hostpci.value.pcie, null)
+      rombar   = try(hostpci.value.rombar, null)
+      rom_file = try(hostpci.value.rom_file, null)
+      xvga     = try(hostpci.value.xvga, null)
+    }
+  }
 
   disk {
     datastore_id = "p0"

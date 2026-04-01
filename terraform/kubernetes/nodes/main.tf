@@ -34,7 +34,7 @@ module "control_plane_vms" {
     }
   ]
   display_type   = "std"
-  cloud_image_id = "cephfs:import/nocloud-amd64-2.raw"
+  cloud_image_id = var.control_plane_cloud_image_id
   disk_size      = "33G"
   dns = {
     domain  = "cp.${each.key}.${var.dns.domain}"
@@ -115,9 +115,10 @@ module "worker_vms" {
       ip4_gateway = cidrhost(var.worker_subnets_by_fd[each.key].cidr, 1)
     }
   ]
-  display_type   = "std"
-  cloud_image_id = "cephfs:import/nocloud-amd64-2.raw"
-  disk_size      = "50G"
+  display_type     = "std"
+  cloud_image_id   = var.worker_cloud_image_id
+  disk_size        = "50G"
+  host_pci_devices = var.worker_host_pci_devices
   dns = {
     domain  = "dp.${each.key}.${var.dns.domain}"
     servers = var.dns.servers.ipv4_addresses

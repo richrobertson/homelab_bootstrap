@@ -92,3 +92,18 @@ variable "ha_enabled" {
   type    = bool
   default = false
 }
+
+variable "host_pci_devices" {
+  description = "Host PCI devices to pass through to the VM. Each entry maps to one hostpci block."
+  type = list(object({
+    device   = string
+    id       = optional(string)
+    mapping  = optional(string)
+    mdev     = optional(string)
+    pcie     = optional(bool)
+    rombar   = optional(bool)
+    rom_file = optional(string)
+    xvga     = optional(bool)
+  }))
+  default = []
+}

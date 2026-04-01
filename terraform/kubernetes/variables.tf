@@ -60,6 +60,38 @@ variable "worker_subnets_by_fd" {
   }))
 }
 
+variable "control_plane_cloud_image_id" {
+  description = "Cloud image used for Talos control plane VMs."
+  type        = string
+  default     = "cephfs:import/nocloud-amd64-2.raw"
+}
+
+variable "worker_cloud_image_id" {
+  description = "Cloud image used for Talos worker VMs."
+  type        = string
+  default     = "cephfs:import/nocloud-amd64-2.raw"
+}
+
+variable "worker_host_pci_devices" {
+  description = "Host PCI devices to attach to every worker VM."
+  type = list(object({
+    device   = string
+    id       = optional(string)
+    mapping  = optional(string)
+    mdev     = optional(string)
+    pcie     = optional(bool)
+    rombar   = optional(bool)
+    rom_file = optional(string)
+    xvga     = optional(bool)
+  }))
+  default = []
+}
+
+variable "talos_installer_image" {
+  description = "Optional Talos installer image to pin in generated machine config."
+  type        = string
+  default     = null
+}
 
 variable "dns_auth_server" {
   type = object({
