@@ -5,7 +5,7 @@ locals {
   vault_pki_mount_path = trim(var.vault_pki_secret_backend_path, "/")
 }
 
-resource "vault_policy" "vault_cert_issuer_policy" {
+resource "vault_policy" "vault-cert-issuer-policy" {
   name = "${var.environment_name}-kubernetes-pki"
 
   policy = <<EOT
@@ -18,11 +18,11 @@ EOT
 }
 
 
-resource "vault_kubernetes_auth_backend_role" "vault_cert_issuer_role" {
+resource "vault_kubernetes_auth_backend_role" "vault-cert-issuer-role" {
   backend                          = var.vault_kubernetes_auth_backend
   role_name                        = "vault-cert-issuer-role"
   bound_service_account_names      = ["cert-manager"]
   bound_service_account_namespaces = ["cert-manager"]
-  token_policies                   = [vault_policy.vault_cert_issuer_policy.name, "default"]
+  token_policies                   = ["${var.environment_name}-kubernetes-pki", "default"]
   audience                         = var.kubernetes_cluster_endpoint
 }

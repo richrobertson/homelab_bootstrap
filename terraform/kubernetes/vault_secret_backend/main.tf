@@ -6,14 +6,14 @@ resource "vault_kubernetes_secret_backend" "config" {
   kubernetes_ca_cert = var.kubernetes_cluster_ca_certificate
 }
 
-resource "vault_kubernetes_secret_backend_role" "vault_secrets_operator_role" {
+resource "vault_kubernetes_secret_backend_role" "vault-secrets-operator-role" {
   backend                       = vault_kubernetes_secret_backend.config.path
   name                          = "vault-secrets-operator-role"
   allowed_kubernetes_namespaces = var.allowed_kubernetes_namespaces
   service_account_name          = var.service_account_name
 }
 
-resource "vault_policy" "vault_secrets_operator_policy" {
+resource "vault_policy" "vault-secrets-operator-policy" {
   name = "${var.environment_name}-kubernetes"
 
   policy = <<EOT
@@ -33,11 +33,11 @@ path "secret/metadata/${var.allowed_secret_path_prefix}/*" {
 EOT
 }
 
-resource "vault_kubernetes_auth_backend_role" "vault_secrets_operator_role" {
+resource "vault_kubernetes_auth_backend_role" "vault-secrets-operator-role" {
   backend                          = var.vault_kubernetes_auth_backend
-  role_name                        = vault_kubernetes_secret_backend_role.vault_secrets_operator_role.name
+  role_name                        = vault_kubernetes_secret_backend_role.vault-secrets-operator-role.name
   bound_service_account_names      = [var.service_account_name, "vault-secrets-operator-controller-manager"]
   bound_service_account_namespaces = var.allowed_kubernetes_namespaces
-  token_policies                   = [vault_policy.vault_secrets_operator_policy.name, "default"]
+  token_policies                   = ["${var.environment_name}-kubernetes", "default"]
   audience                         = var.kubernetes_cluster_endpoint
 }

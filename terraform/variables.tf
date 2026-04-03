@@ -38,3 +38,15 @@ variable "default_dns_servers" {
   description = "Default DNS resolver server IPs used for VM cloud-init."
   type        = list(string)
 }
+
+variable "github_repository" {
+  description = "GitHub repository for Flux bootstrap. Accepts owner/repo or repo name."
+  type        = string
+  default     = "rich/homelab_bootstrap"
+}
+
+variable "enable_flux" {
+  description = "Enable Flux module and active provider wiring. Set false for maintenance imports when kubernetes provider inputs are not yet known."
+  type        = bool
+  default     = true
+}

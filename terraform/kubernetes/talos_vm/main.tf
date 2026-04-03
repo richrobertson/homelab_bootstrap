@@ -44,6 +44,12 @@ EOF
 
     file_name = "user-data-cloud-config-${var.name}.yaml"
   }
+
+  lifecycle {
+    ignore_changes = [
+      source_raw[0].data,
+    ]
+  }
 }
 
 
@@ -136,7 +142,20 @@ resource "proxmox_virtual_environment_vm" "vm" {
     file_format  = "raw"
 
     import_from = var.cloud_image_id
-    size        = var.disk_size
+    size        = tonumber(replace(var.disk_size, "G", ""))
+  }
+
+  lifecycle {
+    ignore_changes = [
+      boot_order,
+      cpu,
+      hotplug,
+      hostpci,
+      initialization,
+      memory,
+      network_device,
+      started,
+    ]
   }
 
 }

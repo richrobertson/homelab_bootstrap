@@ -99,6 +99,8 @@ resource "talos_machine_configuration_apply" "controlplane" {
       # Generates client configuration for accessing the Talos cluster.
       # -----------------------------
       hostname     = each.value.hostname
+      ip4_address  = each.value.ip4_address
+      ip4_gateway  = "${join(".", slice(split(".", each.value.ip4_address), 0, 3))}.1"
       install_disk = each.value.install_disk
     }),
     templatefile("${path.module}/templates/cp-scheduling.yaml.tmpl", {
@@ -128,6 +130,8 @@ resource "talos_machine_configuration_apply" "worker" {
       # Applies generated configuration to control plane nodes.
       # -----------------------------
       hostname     = each.value.hostname
+      ip4_address  = each.value.ip4_address
+      ip4_gateway  = "${join(".", slice(split(".", each.value.ip4_address), 0, 3))}.1"
       install_disk = each.value.install_disk
     })
   ]

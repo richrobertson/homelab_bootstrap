@@ -157,3 +157,12 @@ resource "proxmox_virtual_environment_sdn_applier" "sdn_applier" {
     proxmox_virtual_environment_sdn_subnet.dataplane_subnets,
   ]
 }
+
+resource "proxmox_virtual_environment_sdn_applier" "finalizer" {
+  on_create  = true
+  on_destroy = true
+
+  depends_on = [
+    proxmox_virtual_environment_sdn_applier.sdn_applier,
+  ]
+}

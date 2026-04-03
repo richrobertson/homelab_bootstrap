@@ -120,6 +120,10 @@ resource "proxmox_virtual_environment_vm" "vm" {
     size        = var.disk_size
   }
 
+  lifecycle {
+    ignore_changes = [network_device]
+  }
+
 }
 
 resource "proxmox_virtual_environment_haresource" "vm" {

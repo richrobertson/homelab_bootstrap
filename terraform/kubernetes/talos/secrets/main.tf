@@ -145,23 +145,25 @@ output "machine_secrets" {
 output "client_configuration" {
   sensitive = true
   value = {
-    ca_certificate = base64encode(trimspace(<<-EOF
-    ${module.os.cert_pem}
-  -----BEGIN CERTIFICATE-----
-  MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
-  EQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRzb24x
-  HTAbBgNVBAMTFG15cm9iZXJ0c29uLURDMS1DQS0xMB4XDTI1MTAyMDE3MjMxNFoX
-  DTQwMTAyMDE3MzMwN1owUTETMBEGCgmSJomT8ixkARkWA25ldDEbMBkGCgmSJomT
-  8ixkARkWC215cm9iZXJ0c29uMR0wGwYDVQQDExRteXJvYmVydHNvbi1EQzEtQ0Et
-  MTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABK+4DJe8IQJfxAzy0rPHXzB90y6j
-  VH8DIkZ7MVKDiU3I4wvijS377qYF29isRM7PAIJqoBn2qrj3tq0VXf2kVqejaTBn
-  MBMGCSsGAQQBgjcUAgQGHgQAQwBBMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8E
-  BTADAQH/MB0GA1UdDgQWBBRDeCmhtlyh4RyCRpNsWwmHhSQIiTAQBgkrBgEEAYI3
-  FQEEAwIBADAKBggqhkjOPQQDAgNHADBEAiBanuCZDMRVikhd3L9npjlcU/RfYTM9
-  KBEosp9OrdExBwIgMyq4owAejBTFfxDEco8n/Si9OBQLLZ01n+vwnwLr964=
-  -----END CERTIFICATE-----
-  EOF
-    ))
+    ca_certificate = base64encode(join("\n", compact([
+      trimspace(module.os.cert_pem),
+      trimspace(<<-EOF
+-----BEGIN CERTIFICATE-----
+MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
+EQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRzb24x
+HTAbBgNVBAMTFG15cm9iZXJ0c29uLURDMS1DQS0xMB4XDTI1MTAyMDE3MjMxNFoX
+DTQwMTAyMDE3MzMwN1owUTETMBEGCgmSJomT8ixkARkWA25ldDEbMBkGCgmSJomT
+8ixkARkWC215cm9iZXJ0c29uMR0wGwYDVQQDExRteXJvYmVydHNvbi1EQzEtQ0Et
+MTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABK+4DJe8IQJfxAzy0rPHXzB90y6j
+VH8DIkZ7MVKDiU3I4wvijS377qYF29isRM7PAIJqoBn2qrj3tq0VXf2kVqejaTBn
+MBMGCSsGAQQBgjcUAgQGHgQAQwBBMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8E
+BTADAQH/MB0GA1UdDgQWBBRDeCmhtlyh4RyCRpNsWwmHhSQIiTAQBgkrBgEEAYI3
+FQEEAwIBADAKBggqhkjOPQQDAgNHADBEAiBanuCZDMRVikhd3L9npjlcU/RfYTM9
+KBEosp9OrdExBwIgMyq4owAejBTFfxDEco8n/Si9OBQLLZ01n+vwnwLr964=
+-----END CERTIFICATE-----
+EOF
+      )
+    ])))
     client_certificate = base64encode(trimspace(tls_locally_signed_cert.client_cert.cert_pem))
     client_key         = base64encode(trimspace(tls_private_key.client_key.private_key_pem))
   }

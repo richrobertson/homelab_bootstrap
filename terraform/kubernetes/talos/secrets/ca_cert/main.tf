@@ -25,6 +25,10 @@ resource "tls_cert_request" "this" {
 resource "microsoftadcs_certificate" "this" {
   certificate_signing_request = tls_cert_request.this.cert_request_pem
   template                    = "SubordinateCertificationAuthority-Vault"
+
+  lifecycle {
+    ignore_changes = [certificate_signing_request, template]
+  }
 }
 
 output "private_key_pem" {
@@ -33,24 +37,35 @@ output "private_key_pem" {
 }
 
 output "cert_pem" {
-  value = chomp(microsoftadcs_certificate.this.certificate_pem)
+  value = trimspace(
+    can(base64decode(microsoftadcs_certificate.this.certificate_b64))
+    ? base64decode(microsoftadcs_certificate.this.certificate_b64)
+    : microsoftadcs_certificate.this.certificate_b64
+  )
 }
 
 output "cert_chain_pem" {
-  value = <<-EOF
-  ${microsoftadcs_certificate.this.certificate_pem}
-  -----BEGIN CERTIFICATE-----
-  MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
-  EQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRzb24x
-  HTAbBgNVBAMTFG15cm9iZXJ0c29uLURDMS1DQS0xMB4XDTI1MTAyMDE3MjMxNFoX
-  DTQwMTAyMDE3MzMwN1owUTETMBEGCgmSJomT8ixkARkWA25ldDEbMBkGCgmSJomT
-  8ixkARkWC215cm9iZXJ0c29uMR0wGwYDVQQDExRteXJvYmVydHNvbi1EQzEtQ0Et
-  MTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABK+4DJe8IQJfxAzy0rPHXzB90y6j
-  VH8DIkZ7MVKDiU3I4wvijS377qYF29isRM7PAIJqoBn2qrj3tq0VXf2kVqejaTBn
-  MBMGCSsGAQQBgjcUAgQGHgQAQwBBMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8E
-  BTADAQH/MB0GA1UdDgQWBBRDeCmhtlyh4RyCRpNsWwmHhSQIiTAQBgkrBgEEAYI3
-  FQEEAwIBADAKBggqhkjOPQQDAgNHADBEAiBanuCZDMRVikhd3L9npjlcU/RfYTM9
-  KBEosp9OrdExBwIgMyq4owAejBTFfxDEco8n/Si9OBQLLZ01n+vwnwLr964=
-  -----END CERTIFICATE-----
-  EOF
+  value = join("\n", compact([
+    trimspace(
+      can(base64decode(microsoftadcs_certificate.this.certificate_b64))
+      ? base64decode(microsoftadcs_certificate.this.certificate_b64)
+      : microsoftadcs_certificate.this.certificate_b64
+    ),
+    trimspace(<<-EOF
+-----BEGIN CERTIFICATE-----
+MIICCDCCAa+gAwIBAgIQF9zxtm7FcrlB+hsJIdZ7mzAKBggqhkjOPQQDAjBRMRMw
+EQYKCZImiZPyLGQBGRYDbmV0MRswGQYKCZImiZPyLGQBGRYLbXlyb2JlcnRzb24x
+HTAbBgNVBAMTFG15cm9iZXJ0c29uLURDMS1DQS0xMB4XDTI1MTAyMDE3MjMxNFoX
+DTQwMTAyMDE3MzMwN1owUTETMBEGCgmSJomT8ixkARkWA25ldDEbMBkGCgmSJomT
+8ixkARkWC215cm9iZXJ0c29uMR0wGwYDVQQDExRteXJvYmVydHNvbi1EQzEtQ0Et
+MTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABK+4DJe8IQJfxAzy0rPHXzB90y6j
+VH8DIkZ7MVKDiU3I4wvijS377qYF29isRM7PAIJqoBn2qrj3tq0VXf2kVqejaTBn
+MBMGCSsGAQQBgjcUAgQGHgQAQwBBMA4GA1UdDwEB/wQEAwIBhjAPBgNVHRMBAf8E
+BTADAQH/MB0GA1UdDgQWBBRDeCmhtlyh4RyCRpNsWwmHhSQIiTAQBgkrBgEEAYI3
+FQEEAwIBADAKBggqhkjOPQQDAgNHADBEAiBanuCZDMRVikhd3L9npjlcU/RfYTM9
+KBEosp9OrdExBwIgMyq4owAejBTFfxDEco8n/Si9OBQLLZ01n+vwnwLr964=
+-----END CERTIFICATE-----
+EOF
+    )
+  ]))
 }
