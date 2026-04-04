@@ -19,7 +19,12 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
   datastore_id        = "cephfs"
   node_name           = "pve3"
   url                 = local.cloud_image_url
+  overwrite           = false
   overwrite_unmanaged = true
+
+  lifecycle {
+    ignore_changes = [size]
+  }
 }
 
 resource "proxmox_virtual_environment_download_file" "cloud_image_old" {
@@ -27,7 +32,12 @@ resource "proxmox_virtual_environment_download_file" "cloud_image_old" {
   datastore_id        = "cephfs"
   node_name           = "pve3"
   url                 = local.cloud_image_url_old
+  overwrite           = false
   overwrite_unmanaged = true
+
+  lifecycle {
+    ignore_changes = [size]
+  }
 }
 
 module "database" {

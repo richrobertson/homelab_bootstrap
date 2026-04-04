@@ -16,6 +16,7 @@ module "nodes" {
   }
 
   control_plane_network_bridge = var.control_plane_network_bridge
+  control_plane_network_vlan_id = var.control_plane_network_vlan_id
   control_plane_cpu_cores      = var.kubernetes_nodes_resources["controlplane"].cpu_cores
   control_plane_memory_in_gb   = var.kubernetes_nodes_resources["controlplane"].memory_in_gb
   control_plane_subnets_by_fd  = var.control_plane_subnets_by_fd
@@ -29,6 +30,7 @@ module "nodes" {
 module "vault_pki_secret_backend" {
   source = "./vault_pki_secret_backend"
   cluster_name = var.cluster_name
+  vault_pki_role = var.vault_pki_role
 }
 
 module "talos_cluster" {
@@ -84,6 +86,8 @@ module "certs" {
   environment_name              = var.environment_name
   kubernetes_cluster_endpoint   = module.talos_cluster.cluster_endpoint
   vault_kubernetes_auth_backend = module.vault_auth_backend.backend
+  vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
+  vault_pki_policy_paths        = var.vault_pki_policy_paths
 }
 
 

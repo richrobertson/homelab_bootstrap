@@ -41,7 +41,7 @@ module "control_plane_vms" {
     {
       bridge      = var.control_plane_network_bridge
       firewall    = false
-      vlan_tag    = var.control_plane_network_vlan_id
+      vlan_tag    = null
       ip4_address = "${cidrhost(var.control_plane_subnets_by_fd[each.key].cidr, 2)}/24"
       ip4_gateway = cidrhost(var.control_plane_subnets_by_fd[each.key].cidr, 1)
     }

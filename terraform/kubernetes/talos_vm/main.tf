@@ -44,6 +44,12 @@ resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
 
     file_name = "user-data-cloud-config-${var.name}.yaml"
   }
+
+  lifecycle {
+    ignore_changes = [
+      source_raw[0].data,
+    ]
+  }
 }
 
 
@@ -125,6 +131,12 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
     import_from = var.cloud_image_id
     size        = var.disk_size
+  }
+
+  lifecycle {
+    ignore_changes = [
+      initialization[0].user_data_file_id,
+    ]
   }
 
 }

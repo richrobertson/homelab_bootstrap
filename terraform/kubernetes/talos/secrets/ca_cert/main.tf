@@ -25,6 +25,16 @@ resource "tls_cert_request" "this" {
 resource "microsoftadcs_certificate" "this" {
   certificate_signing_request = tls_cert_request.this.cert_request_pem
   template = "SubordinateCertificationAuthority-Vault"
+
+  # TEMPORARY DEFERRAL SWITCH:
+  # Keep current ADCS-issued Talos CA certs stable (no replace churn) until a planned PKI rotation window.
+  # Remove this lifecycle block when you are ready to rotate/re-issue these certs.
+  lifecycle {
+    ignore_changes = [
+      certificate_signing_request,
+      template,
+    ]
+  }
 }
 
 output "private_key_pem" {
