@@ -21,6 +21,9 @@ variable "fault_domains" {
 variable "control_plane_network_bridge" {
   type = string
 }
+variable "control_plane_network_vlan_id" {
+  type = number
+}
 variable "control_plane_subnets_by_fd" {
   type = map(object({
     cidr = string
@@ -64,4 +67,29 @@ variable "kubernetes_nodes_resources" {
         cpu_cores    = number
         memory_in_gb = number
     }))
+}
+
+variable "vault_pki_policy_paths" {
+  description = "List of Vault policy path configurations for PKI cert-issuer"
+  type = list(object({
+    path         = string
+    capabilities = list(string)
+  }))
+  default = []
+}
+
+variable "vault_pki_role" {
+  description = "Vault PKI role configuration for certificate generation"
+  type = object({
+    allow_any_name    = bool
+    allow_bare_domains = bool
+    allow_subdomains  = bool
+    allowed_domains   = list(string)
+  })
+  default = {
+    allow_any_name    = false
+    allow_bare_domains = true
+    allow_subdomains  = true
+    allowed_domains   = ["myrobertson.net"]
+  }
 }

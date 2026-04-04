@@ -149,6 +149,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
     ignore_changes = [
       disk[0].import_from,
       initialization[0].user_data_file_id,
+      initialization[0].ip_config,
       cpu[0].units]
   }
 

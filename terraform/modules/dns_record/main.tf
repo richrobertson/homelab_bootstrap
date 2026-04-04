@@ -11,7 +11,8 @@ variable "record" {
 resource "powerdns_record" "records" {
   zone    = "${var.record.zone_name}."
   name    = "${var.record.name}.${var.record.zone_name}."
-  type    = var.record.type
+  # Provider canonicalizes record type casing; normalize input to avoid perpetual diffs.
+  type    = upper(var.record.type)
   ttl     = 300
-  records = var.record.records
+  records = sort(var.record.records)
 }

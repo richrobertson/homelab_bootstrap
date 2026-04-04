@@ -55,6 +55,7 @@ module "kubernetes-cluster" {
   cluster_name                 = local.env.kubernetes.cluster_name
   fault_domains                = local.fault_domains
   control_plane_network_bridge = module.networking[0].controlplane_network.bridge_name
+  control_plane_network_vlan_id = local.env["controlplane_vlan_tag"]
   control_plane_subnets_by_fd  = module.networking[0].controlplane_network.subnets_by_fd
   worker_network_bridge        = module.networking[0].dataplane_network.bridge_name
   worker_subnets_by_fd         = module.networking[0].dataplane_network.subnets_by_fd
@@ -63,8 +64,9 @@ module "kubernetes-cluster" {
   dns_server = local.recurse_dns_server
   proxmox_ve_nodes = data.proxmox_virtual_environment_nodes.available_nodes.names
 
-
   kubernetes_nodes_resources = local.env.kubernetes_nodes
+  vault_pki_policy_paths    = local.env.vault_pki_policy_paths
+  vault_pki_role            = local.env.vault_pki_role
 }
 
 
