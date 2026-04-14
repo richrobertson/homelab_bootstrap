@@ -6,13 +6,17 @@ locals {
     }
   }
 
-  dns_server = local.env.environment_name == "prod" ?  module.substrate[0].subns_server.hostname : "subns.myrobertson.net"
-  subns_server = local.env.environment_name == "prod" ?  module.substrate[0].subns_server : {
+  # Pin Kubernetes FD index to Proxmox host mapping:
+  # fd-0 -> pve3, fd-1 -> pve4, fd-2 -> pve5
+  kubernetes_proxmox_ve_nodes = ["pve3", "pve4", "pve5"]
+
+  dns_server = local.env.environment_name == "prod" ? module.substrate[0].subns_server.hostname : "subns.myrobertson.net"
+  subns_server = local.env.environment_name == "prod" ? module.substrate[0].subns_server : {
     ipv4_addresses = ["192.168.7.201"]
     ipv6_addresses = []
     hostname       = "subns.myrobertson.net"
   }
-  recurse_dns_server = local.env.environment_name == "prod" ?  module.substrate[0].nsr_server: {
+  recurse_dns_server = local.env.environment_name == "prod" ? module.substrate[0].nsr_server : {
     ipv4_addresses = ["192.168.7.202"]
     ipv6_addresses = []
     hostname       = "ns1.myrobertson.net"
@@ -37,9 +41,9 @@ module "networking" {
   dns_server             = local.dns_server
   vrf_vxlan              = local.env["vrf_vxlan"]
   dataplane_vlan_tag     = local.env["dataplane_vlan_tag"]
-  controlplane_vlan_tag    = local.env[ "controlplane_vlan_tag"]
-  vxlan_octet = local.env["vxlan_octet"]
-  nodes = data.proxmox_virtual_environment_nodes.available_nodes.names
+  controlplane_vlan_tag  = local.env["controlplane_vlan_tag"]
+  vxlan_octet            = local.env["vxlan_octet"]
+  nodes                  = data.proxmox_virtual_environment_nodes.available_nodes.names
   #node_ips = data.proxmox_virtual_environment_nodes.available_nodes.
 
 }
@@ -52,21 +56,21 @@ module "kubernetes-cluster" {
   environment_name       = local.env.environment_name
   environment_short_name = local.env.environment_short_name
 
-  cluster_name                 = local.env.kubernetes.cluster_name
-  fault_domains                = local.fault_domains
-  control_plane_network_bridge = module.networking[0].controlplane_network.bridge_name
+  cluster_name                  = local.env.kubernetes.cluster_name
+  fault_domains                 = local.fault_domains
+  control_plane_network_bridge  = module.networking[0].controlplane_network.bridge_name
   control_plane_network_vlan_id = local.env["controlplane_vlan_tag"]
-  control_plane_subnets_by_fd  = module.networking[0].controlplane_network.subnets_by_fd
-  worker_network_bridge        = module.networking[0].dataplane_network.bridge_name
-  worker_subnets_by_fd         = module.networking[0].dataplane_network.subnets_by_fd
+  control_plane_subnets_by_fd   = module.networking[0].controlplane_network.subnets_by_fd
+  worker_network_bridge         = module.networking[0].dataplane_network.bridge_name
+  worker_subnets_by_fd          = module.networking[0].dataplane_network.subnets_by_fd
 
-  dns_auth_sever = local.subns_server
-  dns_server = local.recurse_dns_server
-  proxmox_ve_nodes = data.proxmox_virtual_environment_nodes.available_nodes.names
+  dns_auth_sever   = local.subns_server
+  dns_server       = local.recurse_dns_server
+  proxmox_ve_nodes = local.kubernetes_proxmox_ve_nodes
 
   kubernetes_nodes_resources = local.env.kubernetes_nodes
-  vault_pki_policy_paths    = local.env.vault_pki_policy_paths
-  vault_pki_role            = local.env.vault_pki_role
+  vault_pki_policy_paths     = local.env.vault_pki_policy_paths
+  vault_pki_role             = local.env.vault_pki_role
 }
 
 
