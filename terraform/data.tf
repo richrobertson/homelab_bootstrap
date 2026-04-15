@@ -27,3 +27,7 @@ data "vault_generic_secret" "vault_ca_cert" {
 data "vault_generic_secret" "talos_secrets" {
   path = "secret/talos/${local.env.environment_name}"
 }
+
+data "vault_generic_secret" "volsync_s3_settings" {
+  path = var.volsync_s3_settings_vault_path
+}

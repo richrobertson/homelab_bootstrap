@@ -102,3 +102,20 @@ variable "worker_gpu_hostpci" {
   }))
   default = null
 }
+
+variable "talos_etcd_backup_s3" {
+  description = "Optional Talos etcd backup configuration for S3. Set to null to disable managed etcd backups."
+  type        = any
+  default     = null
+  sensitive   = true
+
+  validation {
+    condition = var.talos_etcd_backup_s3 == null || alltrue([
+      can(var.talos_etcd_backup_s3.bucket),
+      can(var.talos_etcd_backup_s3.region),
+      can(var.talos_etcd_backup_s3.access_key_id),
+      can(var.talos_etcd_backup_s3.secret_access_key)
+    ])
+    error_message = "talos_etcd_backup_s3 must include bucket, region, access_key_id, and secret_access_key when set."
+  }
+}

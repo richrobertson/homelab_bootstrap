@@ -31,6 +31,10 @@ terraform {
     microsoftadcs = {
       source = "registry.terraform.io/flipyap/microsoft-adcs"
     }
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
   }
 
   backend "s3" {

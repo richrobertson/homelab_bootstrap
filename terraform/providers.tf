@@ -44,6 +44,12 @@ provider "proxmox" {
   insecure = true
 }
 
+provider "aws" {
+  region     = local.volsync_s3_region
+  access_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_ACCESS_KEY_ID"]
+  secret_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_SECRET_ACCESS_KEY"]
+}
+
 provider "talos" {}
 
 provider "microsoftadcs" {

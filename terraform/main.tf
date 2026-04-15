@@ -21,6 +21,24 @@ locals {
     ipv6_addresses = []
     hostname       = "ns1.myrobertson.net"
   }
+
+  talos_backup_env_suffix         = local.env.environment_name == "staging" ? "stage" : local.env.environment_name
+  talos_backup_shared_bucket_name = "myrobertson-homelab-talos-etcd-backups"
+
+  volsync_restic_repository = try(data.vault_generic_secret.volsync_s3_settings.data["RESTIC_REPOSITORY"], null)
+  volsync_s3_region = coalesce(
+    var.volsync_s3_region_override,
+    try(regex("s3\\.([^.]+)\\.amazonaws\\.com", local.volsync_restic_repository)[0], null),
+    "us-west-2"
+  )
+
+  talos_etcd_backup_s3_from_vault = contains(["staging", "prod"], local.env.environment_name) ? {
+    bucket            = local.talos_backup_shared_bucket_name
+    region            = local.volsync_s3_region
+    prefix            = local.talos_backup_env_suffix
+    access_key_id     = data.vault_generic_secret.volsync_s3_settings.data["AWS_ACCESS_KEY_ID"]
+    secret_access_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_SECRET_ACCESS_KEY"]
+  } : null
 }
 
 module "substrate" {
@@ -71,6 +89,7 @@ module "kubernetes-cluster" {
   kubernetes_nodes_resources = local.env.kubernetes_nodes
   vault_pki_policy_paths     = local.env.vault_pki_policy_paths
   vault_pki_role             = local.env.vault_pki_role
+  talos_etcd_backup_s3       = var.talos_etcd_backup_s3 != null ? var.talos_etcd_backup_s3 : local.talos_etcd_backup_s3_from_vault
 }
 
 

@@ -60,6 +60,7 @@ module "talos_cluster" {
     }
   }
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
+  talos_etcd_backup_s3          = var.talos_etcd_backup_s3
 }
 
 

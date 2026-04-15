@@ -33,7 +33,8 @@ data "talos_machine_configuration" "controlplane" {
           [for k, v in var.node_data.controlplanes : v.ip4_address]
         )
       }
-    })],
+    }),
+    ],
     [file("${path.module}/files/taint-cp-nodes.yaml")]
   )
 }
