@@ -2,6 +2,10 @@ variable "proxmox_ve_nodes" {
   type = list(string)
 }
 
+variable "environment_name" {
+  type = string
+}
+
 variable "cluster_short_name" {
   type = string
 }
@@ -76,10 +80,19 @@ variable "dns_auth_sever" {
 
 variable "dns" {
   type = object({
-    domain  = string
+    domain = string
     servers = object({
-    ipv4_addresses = list(string)
-    ipv6_addresses = list(string)
+      ipv4_addresses = list(string)
+      ipv6_addresses = list(string)
+    })
   })
-  })
-  }
+}
+
+variable "worker_gpu_hostpci" {
+  description = "List of host PCI devices to passthrough to fd-0 worker node for GPU support (e.g., Intel iGPU)"
+  type = list(object({
+    device  = string
+    mapping = optional(string)
+  }))
+  default = null
+}

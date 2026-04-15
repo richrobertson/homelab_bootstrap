@@ -14,6 +14,12 @@ variable "name" {
   type        = string
 }
 
+variable "tags" {
+  description = "Proxmox tags to apply to the VM for grouping and filtering."
+  type        = list(string)
+  default     = []
+}
+
 variable "networks" {
   type = list(object({
     bridge      = string

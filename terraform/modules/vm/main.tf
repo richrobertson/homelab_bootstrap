@@ -63,6 +63,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   name = var.name
 
   node_name = var.node_name
+  tags      = var.tags
 
   on_boot = true
 
@@ -150,7 +151,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
       disk[0].import_from,
       initialization[0].user_data_file_id,
       initialization[0].ip_config,
-      cpu[0].units]
+    cpu[0].units]
   }
 
 }
@@ -161,6 +162,6 @@ resource "proxmox_virtual_environment_haresource" "vm" {
   state       = "started"
   comment     = "Managed by Terraform"
   lifecycle {
-    ignore_changes = [ comment ]
+    ignore_changes = [comment]
   }
 }

@@ -3,6 +3,7 @@
 module "vm" {
   source         = "../../modules/vm"
   name           = "ns1"
+  tags           = ["substrate"]
   cloud_image_id = var.cloud_image_id
   networks = [{
     bridge      = "vmbr1"

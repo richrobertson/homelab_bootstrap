@@ -4,6 +4,7 @@ module "vm" {
   source = "./../../modules/vm"
 
   name           = var.hostname
+  tags           = ["substrate"]
   cloud_image_id = var.cloud_image_id
   networks = [{
     bridge      = var.network_bridge

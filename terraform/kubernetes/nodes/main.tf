@@ -9,7 +9,8 @@ terraform {
 }
 
 locals {
-  cloud_image_url = "https://factory.talos.dev/image/dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586/v1.12.6/nocloud-amd64.raw.xz"
+  cloud_image_url   = "https://factory.talos.dev/image/dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586/v1.11.1/nocloud-amd64.raw.xz"
+  proxmox_group_tag = contains(["production", "prod"], var.environment_name) ? "prod" : contains(["staging", "stage", "stg"], var.environment_name) ? "stage" : var.environment_name
 }
 
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
@@ -34,6 +35,7 @@ module "control_plane_vms" {
   for_each            = var.fault_domains
   skip_user_data_file = false
   name                = "k8s-${var.cluster_short_name}-cp-${each.value.id}"
+  tags                = [local.proxmox_group_tag]
   node_name           = var.proxmox_ve_nodes[each.value.id]
   cpu_cores           = var.control_plane_cpu_cores
   memory_in_gb        = var.control_plane_memory_in_gb
@@ -110,11 +112,12 @@ module "data_plane_subnet_domains" {
 }
 
 module "worker_vms" {
-  depends_on = [ module.data_plane_subnet_domains, module.control_plane_vms ]
-  source   = "../talos_vm"
-  for_each = var.fault_domains
+  depends_on = [module.data_plane_subnet_domains, module.control_plane_vms]
+  source     = "../talos_vm"
+  for_each   = var.fault_domains
 
   name         = "k8s-${var.cluster_short_name}-worker-${each.value.id}"
+  tags         = [local.proxmox_group_tag]
   node_name    = var.proxmox_ve_nodes[each.value.id]
   cpu_cores    = var.worker_cpu_cores
   memory_in_gb = var.worker_memory_in_gb
@@ -135,6 +138,9 @@ module "worker_vms" {
     servers = var.dns.servers.ipv4_addresses
   }
   ha_enabled = false
+
+  # GPU passthrough for fd-0 (Intel iGPU) - keep SeaBIOS for stability
+  hostpci = each.value.id == 0 ? var.worker_gpu_hostpci : null
 }
 
 module "data_plane_host_records" {

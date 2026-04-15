@@ -59,12 +59,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
   name = var.name
 
   node_name = var.node_name
+  tags      = var.tags
 
   on_boot = true
 
   machine       = "q35"
   scsi_hardware = "virtio-scsi-single"
-  bios          = "seabios"
+  bios          = var.bios_type
 
   cpu {
     cores = var.cpu_cores
@@ -131,6 +132,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
     import_from = var.cloud_image_id
     size        = var.disk_size
+  }
+
+  dynamic "hostpci" {
+    for_each = var.hostpci != null ? var.hostpci : []
+    content {
+      device  = hostpci.value["device"]
+      mapping = hostpci.value.mapping
+    }
   }
 
   lifecycle {

@@ -63,10 +63,10 @@ variable "proxmox_ve_nodes" {
 }
 
 variable "kubernetes_nodes_resources" {
-    type = map(object({
-        cpu_cores    = number
-        memory_in_gb = number
-    }))
+  type = map(object({
+    cpu_cores    = number
+    memory_in_gb = number
+  }))
 }
 
 variable "vault_pki_policy_paths" {
@@ -81,21 +81,24 @@ variable "vault_pki_policy_paths" {
 variable "vault_pki_role" {
   description = "Vault PKI role configuration for certificate generation"
   type = object({
-    allow_any_name    = bool
+    allow_any_name     = bool
     allow_bare_domains = bool
-    allow_subdomains  = bool
-    allowed_domains   = list(string)
+    allow_subdomains   = bool
+    allowed_domains    = list(string)
   })
   default = {
-    allow_any_name    = false
+    allow_any_name     = false
     allow_bare_domains = true
-    allow_subdomains  = true
-    allowed_domains   = ["myrobertson.net"]
+    allow_subdomains   = true
+    allowed_domains    = ["myrobertson.net"]
   }
 }
 
-variable "enable_talos_cluster_health_check" {
-  description = "Whether to run Talos cluster health checks during plan/apply."
-  type        = bool
-  default     = true
+variable "worker_gpu_hostpci" {
+  description = "List of host PCI devices for GPU passthrough to fd-0 worker node (Intel iGPU)"
+  type = list(object({
+    device  = string
+    mapping = optional(string)
+  }))
+  default = null
 }

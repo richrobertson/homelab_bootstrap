@@ -16,15 +16,15 @@ resource "tls_private_key" "this" {
 resource "tls_cert_request" "this" {
   private_key_pem = tls_private_key.this.private_key_pem
   subject {
-    organization = local.role.organization == ""? null : local.role.organization
-    common_name = var.role_name
+    organization = local.role.organization == "" ? null : local.role.organization
+    common_name  = var.role_name
   }
 }
 
 #https://registry.terraform.io/providers/flipyap/microsoft-adcs/latest/docs/resources/certificate
 resource "microsoftadcs_certificate" "this" {
   certificate_signing_request = tls_cert_request.this.cert_request_pem
-  template = "SubordinateCertificationAuthority-Vault"
+  template                    = "SubordinateCertificationAuthority-Vault"
 
   # TEMPORARY DEFERRAL SWITCH:
   # Keep current ADCS-issued Talos CA certs stable (no replace churn) until a planned PKI rotation window.
@@ -38,7 +38,7 @@ resource "microsoftadcs_certificate" "this" {
 }
 
 output "private_key_pem" {
-  value = tls_private_key.this.private_key_pem
+  value     = tls_private_key.this.private_key_pem
   sensitive = true
 }
 output "cert_pem" {

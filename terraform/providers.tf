@@ -47,7 +47,7 @@ provider "proxmox" {
 provider "talos" {}
 
 provider "microsoftadcs" {
-  host = "dc1.myrobertson.net"
+  host     = "dc1.myrobertson.net"
   username = data.vault_generic_secret.windows_domain_admin.data["username"]
   password = data.vault_generic_secret.windows_domain_admin.data["password"]
   use_ntlm = true

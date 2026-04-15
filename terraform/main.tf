@@ -71,7 +71,6 @@ module "kubernetes-cluster" {
   kubernetes_nodes_resources = local.env.kubernetes_nodes
   vault_pki_policy_paths     = local.env.vault_pki_policy_paths
   vault_pki_role             = local.env.vault_pki_role
-  enable_talos_cluster_health_check = var.enable_talos_cluster_health_check
 }
 
 

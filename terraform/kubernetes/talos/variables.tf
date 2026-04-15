@@ -20,11 +20,5 @@ variable "node_data" {
 }
 
 variable "vault_pki_secret_backend_path" {
-  type        = string
-}
-
-variable "enable_talos_cluster_health_check" {
-  description = "Whether to run Talos cluster health checks during plan/apply."
-  type        = bool
-  default     = true
+  type = string
 }

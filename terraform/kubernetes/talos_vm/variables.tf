@@ -14,6 +14,12 @@ variable "name" {
   type        = string
 }
 
+variable "tags" {
+  description = "Proxmox tags to apply to the VM for grouping and filtering."
+  type        = list(string)
+  default     = []
+}
+
 variable "networks" {
   type = list(object({
     bridge      = string
@@ -90,4 +96,24 @@ variable "skip_user_data_file" {
 variable "ha_enabled" {
   type    = bool
   default = false
+}
+
+variable "bios_type" {
+  description = "BIOS type: 'seabios' or 'ovmf' (UEFI). Use 'ovmf' for GPU passthrough."
+  type        = string
+  default     = "seabios"
+
+  validation {
+    condition     = contains(["seabios", "ovmf"], var.bios_type)
+    error_message = "bios_type must be either 'seabios' or 'ovmf'."
+  }
+}
+
+variable "hostpci" {
+  description = "List of host PCI devices to passthrough (e.g., for GPU). Set to null to disable."
+  type = list(object({
+    device  = string           # e.g., "0000:00:02.0" for iGPU
+    mapping = optional(string) # GPU ID mapping name (optional)
+  }))
+  default = null
 }
