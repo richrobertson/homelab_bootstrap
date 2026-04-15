@@ -83,3 +83,40 @@ Recommended next step for staging:
 1. Build or publish a Talos Image Factory schematic that includes the required NVIDIA system extensions.
 2. Set `gpu_talos_installer_image` in `terraform/environment.tf` for the `staging` workspace.
 3. Re-run `terraform plan` and then upgrade or reinstall `k8s-stg-worker-0` with that installer image.
+
+## Talos etcd backups to shared S3 bucket
+
+Talos v1.12 machine config does not support `cluster.etcd.backup` fields, so backups are handled out-of-band via `talosctl etcd snapshot`.
+
+### Scripted backup
+
+Run the backup script from repository root:
+
+```bash
+bash scripts/backup_talos_etcd_to_s3.sh
+```
+
+What the script does:
+
+1. Detects the current Terraform workspace (`staging`, `production`, etc.).
+2. Exports `talosconfig` from Terraform output.
+3. Uses Vault path `secret/volsync/prod/plex-config-ceph` to load S3 credentials.
+4. Takes an etcd snapshot using `talosctl`.
+5. Uploads snapshot to shared bucket `myrobertson-homelab-talos-etcd-backups` under prefix:
+	- `stage/` for `staging`
+	- `prod/` for `production` or `prod`
+
+Required CLIs on the runner:
+
+- `terraform`
+- `talosctl`
+- `vault`
+- `aws`
+
+### Jenkins integration
+
+The Jenkins pipeline now includes stage `Talos etcd backup to S3`, which runs on `main` for non-PR builds:
+
+```groovy
+sh 'bash scripts/backup_talos_etcd_to_s3.sh'
+```

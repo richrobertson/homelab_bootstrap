@@ -116,5 +116,13 @@ pipeline {
                 sh 'cd terraform && terraform apply -input=false -auto-approve tfplan.out'
             }
         }
+        stage('Talos etcd backup to S3') {
+            when {
+                expression { return env.CHANGE_ID == null && env.BRANCH_NAME == 'main' }
+            }
+            steps {
+                sh 'bash scripts/backup_talos_etcd_to_s3.sh'
+            }
+        }
     }
 }
