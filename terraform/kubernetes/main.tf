@@ -37,6 +37,7 @@ module "talos_cluster" {
   depends_on   = [module.nodes]
   source       = "./talos"
   cluster_name = var.cluster_name
+  enable_talos_cluster_health_check = var.enable_talos_cluster_health_check
   node_data = {
     controlplanes = {
       for k, v in var.fault_domains :

@@ -121,7 +121,7 @@ resource "talos_machine_bootstrap" "this" {
 }
 
 data "talos_cluster_health" "health" {
-  count=1
+  count=var.enable_talos_cluster_health_check ? 1 : 0
   depends_on           = [ talos_machine_bootstrap.this ]
   client_configuration = data.talos_client_configuration.this.client_configuration
   control_plane_nodes  = [for k, v in var.node_data.controlplanes : v.ip4_address]
