@@ -65,8 +65,22 @@ cd "${TERRAFORM_DIR}"
 terraform workspace select "${workspace}" >/dev/null
 terraform output -raw talosconfig > "${talosconfig_path}"
 
-# Use default nodes/endpoints embedded in talosconfig output from terraform.
-talosctl --talosconfig "${talosconfig_path}" etcd snapshot "${snapshot_path}"
+# talosctl etcd snapshot requires a single node.
+snapshot_node="$(awk '
+  /^contexts:/ {in_contexts=1}
+  in_contexts && $1 == "nodes:" {in_nodes=1; next}
+  in_nodes && $1 == "endpoints:" {in_nodes=0}
+  in_nodes && $1 == "-" {print $2; exit}
+' "${talosconfig_path}")"
+
+snapshot_endpoint="${snapshot_node}"
+
+if [[ -z "${snapshot_endpoint}" || -z "${snapshot_node}" ]]; then
+  echo "Unable to determine snapshot endpoint/node from talosconfig" >&2
+  exit 1
+fi
+
+talosctl --talosconfig "${talosconfig_path}" --endpoints "${snapshot_endpoint}" --nodes "${snapshot_node}" etcd snapshot "${snapshot_path}"
 
 aws s3 cp "${snapshot_path}" "s3://${TALOS_BACKUP_BUCKET}/${s3_key}"
 
