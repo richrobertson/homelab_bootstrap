@@ -35,6 +35,6 @@ module "firewall_vms" {
       ip4_gateway = "10.1.0.1"
     }
   ]
-  cloud_image_id = "cephfs:import/${local.cloud_image_name}"
+  cloud_image_id = "kubernetes-prod-cephfs:import/${local.cloud_image_name}"
   disk_size      = 23
 }

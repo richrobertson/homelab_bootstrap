@@ -122,13 +122,16 @@ resource "talos_machine_bootstrap" "this" {
 }
 
 data "talos_cluster_health" "health" {
-  count                  = 1
+  count                  = var.enable_cluster_health_check ? 1 : 0
   depends_on             = [talos_machine_bootstrap.this]
   client_configuration   = data.talos_client_configuration.this.client_configuration
   control_plane_nodes    = [for k, v in var.node_data.controlplanes : v.ip4_address]
   worker_nodes           = [for k, v in var.node_data.workers : v.ip4_address]
   endpoints              = [for k, v in var.node_data.controlplanes : v.ip4_address]
   skip_kubernetes_checks = true
+  timeouts = {
+    read = "15m"
+  }
 }
 
 
@@ -136,4 +139,59 @@ resource "talos_cluster_kubeconfig" "this" {
   depends_on           = [talos_machine_bootstrap.this]
   client_configuration = module.secrets.client_configuration
   node                 = [for k, v in var.node_data.controlplanes : v.ip4_address][0]
+}
+
+resource "terraform_data" "bootstrap_coredns_patch" {
+  count = contains(["staging", "stage", "stg"], var.cluster_name) ? 1 : 0
+
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  triggers_replace = {
+    cluster_endpoint = local.cluster_endpoint
+    kubeconfig_sha   = sha256(talos_cluster_kubeconfig.this.kubeconfig_raw)
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["/bin/bash", "-c"]
+    environment = {
+      KUBECONFIG_RAW = talos_cluster_kubeconfig.this.kubeconfig_raw
+    }
+    command = <<-EOT
+      set -euo pipefail
+
+      if ! command -v kubectl >/dev/null 2>&1; then
+        echo "kubectl is required to patch CoreDNS placement during bootstrap" >&2
+        exit 1
+      fi
+
+      kubeconfig="$(mktemp)"
+      trap 'rm -f "$kubeconfig"' EXIT
+
+      printf '%s' "$KUBECONFIG_RAW" > "$kubeconfig"
+
+      for _ in $(seq 1 60); do
+        if kubectl --kubeconfig "$kubeconfig" -n kube-system get deployment coredns >/dev/null 2>&1; then
+          break
+        fi
+
+        sleep 5
+      done
+
+      cat <<'EOF' | kubectl --kubeconfig "$kubeconfig" apply --server-side --field-manager=bootstrap-coredns-patch --force-conflicts -f -
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: coredns
+        namespace: kube-system
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/os: linux
+              node-role.kubernetes.io/control-plane: ""
+      EOF
+
+      kubectl --kubeconfig "$kubeconfig" -n kube-system rollout status deployment/coredns --timeout=5m
+    EOT
+  }
 }

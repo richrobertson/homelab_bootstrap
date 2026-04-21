@@ -10,7 +10,7 @@ terraform {
 
 
 locals {
-  snippets_datastore_id = "cephfs"
+  snippets_datastore_id = "kubernetes-prod-cephfs"
   default_packages      = concat(["qemu-guest-agent", "net-tools", "curl"], var.ansible_playbook_name == "" ? [] : ["ansible"])
   final_packages        = concat(local.default_packages, var.additional_packages)
   default_run_cmds      = ["systemctl enable qemu-guest-agent", "systemctl start qemu-guest-agent"]

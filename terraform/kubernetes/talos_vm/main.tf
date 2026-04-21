@@ -10,10 +10,11 @@ terraform {
 
 
 locals {
-  snippets_datastore_id = "cephfs"
+  snippets_datastore_id = var.node_name == "pve3" ? "kubernetes-prod-cephfs" : "local"
 }
 
 resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
+  count        = var.skip_user_data_file ? 0 : 1
   content_type = "snippets"
   datastore_id = local.snippets_datastore_id
   node_name    = var.node_name
@@ -81,7 +82,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   initialization {
-    user_data_file_id = var.skip_user_data_file ? null : proxmox_virtual_environment_file.user_data_cloud_config.id
+    user_data_file_id = var.skip_user_data_file ? null : proxmox_virtual_environment_file.user_data_cloud_config[0].id
 
     datastore_id = "p0"
     interface    = "ide0"

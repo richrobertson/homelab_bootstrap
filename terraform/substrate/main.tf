@@ -16,7 +16,7 @@ locals {
 
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
   content_type        = "import"
-  datastore_id        = "cephfs"
+  datastore_id        = "kubernetes-prod-cephfs"
   node_name           = "pve3"
   url                 = local.cloud_image_url
   overwrite           = false
@@ -29,7 +29,7 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
 
 resource "proxmox_virtual_environment_download_file" "cloud_image_old" {
   content_type        = "import"
-  datastore_id        = "cephfs"
+  datastore_id        = "kubernetes-prod-cephfs"
   node_name           = "pve3"
   url                 = local.cloud_image_url_old
   overwrite           = false

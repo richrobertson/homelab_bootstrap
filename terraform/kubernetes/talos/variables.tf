@@ -39,3 +39,9 @@ variable "talos_etcd_backup_s3" {
     error_message = "talos_etcd_backup_s3 must include bucket, region, access_key_id, and secret_access_key when set."
   }
 }
+
+variable "enable_cluster_health_check" {
+  description = "Whether to block Terraform on the Talos cluster health data source."
+  type        = bool
+  default     = true
+}

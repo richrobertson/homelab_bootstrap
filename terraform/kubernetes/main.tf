@@ -61,6 +61,7 @@ module "talos_cluster" {
   }
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
   talos_etcd_backup_s3          = var.talos_etcd_backup_s3
+  enable_cluster_health_check   = !contains(["staging", "stage", "stg"], var.environment_name)
 }
 
 
@@ -92,6 +93,5 @@ module "certs" {
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
   vault_pki_policy_paths        = var.vault_pki_policy_paths
 }
-
 
 

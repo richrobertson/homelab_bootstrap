@@ -9,17 +9,22 @@ terraform {
 }
 
 locals {
-  cloud_image_url   = "https://factory.talos.dev/image/dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586/v1.11.1/nocloud-amd64.raw.xz"
-  proxmox_group_tag = contains(["production", "prod"], var.environment_name) ? "prod" : contains(["staging", "stage", "stg"], var.environment_name) ? "stage" : var.environment_name
+  is_staging                 = contains(["staging", "stage", "stg"], var.environment_name)
+  talos_factory_schematic_id = "dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586"
+  talos_image_version        = "v1.12.6"
+  cloud_image_url            = "https://factory.talos.dev/image/${local.talos_factory_schematic_id}/${local.talos_image_version}/nocloud-amd64.raw"
+  staging_cloud_image_id     = "local:import/nocloud-amd64-${local.talos_image_version}.raw"
+  proxmox_group_tag          = contains(["production", "prod"], var.environment_name) ? "prod" : local.is_staging ? "stage" : var.environment_name
 }
 
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
-  count               = 0
+  for_each            = local.is_staging ? toset([]) : toset(var.proxmox_ve_nodes)
   content_type        = "import"
-  datastore_id        = "cephfs"
-  node_name           = "pve3"
-  file_name           = "nocloud-amd64.iso"
+  datastore_id        = "local"
+  node_name           = each.value
+  file_name           = "nocloud-amd64.raw"
   url                 = local.cloud_image_url
+  overwrite           = true
   overwrite_unmanaged = true
 }
 
@@ -33,7 +38,7 @@ module "control_plane_vms" {
   depends_on          = [module.control_plane_subnet_domains]
   source              = "../talos_vm"
   for_each            = var.fault_domains
-  skip_user_data_file = false
+  skip_user_data_file = true
   name                = "k8s-${var.cluster_short_name}-cp-${each.value.id}"
   tags                = [local.proxmox_group_tag]
   node_name           = var.proxmox_ve_nodes[each.value.id]
@@ -49,7 +54,7 @@ module "control_plane_vms" {
     }
   ]
   display_type   = "std"
-  cloud_image_id = "cephfs:import/nocloud-amd64.raw"
+  cloud_image_id = local.is_staging ? local.staging_cloud_image_id : proxmox_virtual_environment_download_file.cloud_image[var.proxmox_ve_nodes[each.value.id]].id
   disk_size      = 33
   dns = {
     domain  = "cp.${each.key}.${var.dns.domain}"
@@ -112,9 +117,10 @@ module "data_plane_subnet_domains" {
 }
 
 module "worker_vms" {
-  depends_on = [module.data_plane_subnet_domains, module.control_plane_vms]
-  source     = "../talos_vm"
-  for_each   = var.fault_domains
+  depends_on          = [module.data_plane_subnet_domains, module.control_plane_vms]
+  source              = "../talos_vm"
+  for_each            = var.fault_domains
+  skip_user_data_file = true
 
   name         = "k8s-${var.cluster_short_name}-worker-${each.value.id}"
   tags         = [local.proxmox_group_tag]
@@ -131,7 +137,7 @@ module "worker_vms" {
     }
   ]
   display_type   = "std"
-  cloud_image_id = "cephfs:import/nocloud-amd64.raw"
+  cloud_image_id = local.is_staging ? local.staging_cloud_image_id : proxmox_virtual_environment_download_file.cloud_image[var.proxmox_ve_nodes[each.value.id]].id
   disk_size      = 50
   dns = {
     domain  = "dp.${each.key}.${var.dns.domain}"
@@ -177,5 +183,3 @@ module "data_plane_host_records" {
 #     records = [for ipv6_addresses in module.worker_vms[each.key].ipv6_addresses: ipv6_addresses]
 #   }
 # }
-
-
