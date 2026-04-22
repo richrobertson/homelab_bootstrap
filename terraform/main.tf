@@ -87,6 +87,9 @@ module "kubernetes-cluster" {
   proxmox_ve_nodes = local.kubernetes_proxmox_ve_nodes
 
   kubernetes_nodes_resources = local.env.kubernetes_nodes
+  worker_gpu_hostpci         = local.default_intel_igpu_hostpci
+  gpu_worker_fault_domains   = local.env.gpu_worker_fault_domains
+  gpu_talos_installer_image  = local.env.gpu_talos_installer_image
   vault_pki_policy_paths     = local.env.vault_pki_policy_paths
   vault_pki_role             = local.env.vault_pki_role
   talos_etcd_backup_s3       = var.talos_etcd_backup_s3 != null ? var.talos_etcd_backup_s3 : local.talos_etcd_backup_s3_from_vault
@@ -113,4 +116,3 @@ module "firewall" {
   wan_network_bridge   = "vmbr1"
   wan_network_vlan_tag = 7
 }
-

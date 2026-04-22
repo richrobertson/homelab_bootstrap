@@ -139,7 +139,9 @@ resource "proxmox_virtual_environment_vm" "vm" {
     for_each = var.hostpci != null ? var.hostpci : []
     content {
       device  = hostpci.value["device"]
+      id      = try(hostpci.value.id, null)
       mapping = hostpci.value.mapping
+      pcie    = try(hostpci.value.pcie, null)
     }
   }
 

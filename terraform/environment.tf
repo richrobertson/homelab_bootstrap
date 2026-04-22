@@ -1,4 +1,12 @@
 locals {
+  default_intel_igpu_hostpci = [
+    {
+      device = "hostpci0"
+      id     = "0000:00:02.0"
+      pcie   = true
+    }
+  ]
+
   env = local.envs[terraform.workspace]
 
   envs = {
@@ -27,6 +35,8 @@ locals {
           memory_in_gb = 24
         }
       }
+      gpu_worker_fault_domains  = ["fd-0"]
+      gpu_talos_installer_image = "factory.talos.dev/installer/bf2113e1bea48d566f7d1e08eb780f832ccb56bbd7cf2f95769f7a04f9f2b184:v1.12.6"
       # Vault PKI policy - production matches current live cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int_prod", capabilities = ["read", "list"] },
@@ -68,6 +78,8 @@ locals {
           memory_in_gb = 20
         }
       }
+      gpu_worker_fault_domains  = ["fd-0"]
+      gpu_talos_installer_image = "factory.talos.dev/installer/bf2113e1bea48d566f7d1e08eb780f832ccb56bbd7cf2f95769f7a04f9f2b184:v1.12.6"
       # Vault PKI policy - staging uses tighter, cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int_staging", capabilities = ["read", "list"] },
@@ -109,6 +121,8 @@ locals {
           memory_in_gb = 8
         }
       }
+      gpu_worker_fault_domains  = []
+      gpu_talos_installer_image = null
       # Vault PKI policy - default uses tighter, cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int", capabilities = ["read", "list"] },

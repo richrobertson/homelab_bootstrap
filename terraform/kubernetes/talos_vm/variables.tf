@@ -112,8 +112,10 @@ variable "bios_type" {
 variable "hostpci" {
   description = "List of host PCI devices to passthrough (e.g., for GPU). Set to null to disable."
   type = list(object({
-    device  = string           # e.g., "0000:00:02.0" for iGPU
-    mapping = optional(string) # GPU ID mapping name (optional)
+    device  = string           # e.g., "hostpci0"
+    id      = optional(string) # PCI device ID, e.g. "0000:00:02.0"
+    mapping = optional(string) # GPU resource mapping name (optional)
+    pcie    = optional(bool)
   }))
   default = null
 }

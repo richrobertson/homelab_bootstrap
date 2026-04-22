@@ -146,7 +146,7 @@ module "worker_vms" {
   ha_enabled = false
 
   # GPU passthrough for fd-0 (Intel iGPU) - keep SeaBIOS for stability
-  hostpci = each.value.id == 0 ? var.worker_gpu_hostpci : null
+  hostpci = contains(var.gpu_worker_fault_domains, each.key) ? var.worker_gpu_hostpci : null
 }
 
 module "data_plane_host_records" {

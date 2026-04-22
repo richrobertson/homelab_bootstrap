@@ -22,11 +22,12 @@ module "nodes" {
   control_plane_memory_in_gb    = var.kubernetes_nodes_resources["controlplane"].memory_in_gb
   control_plane_subnets_by_fd   = var.control_plane_subnets_by_fd
 
-  worker_cpu_cores      = var.kubernetes_nodes_resources["dataplane"].cpu_cores
-  worker_memory_in_gb   = var.kubernetes_nodes_resources["dataplane"].memory_in_gb
-  worker_network_bridge = var.worker_network_bridge
-  worker_subnets_by_fd  = var.worker_subnets_by_fd
-  worker_gpu_hostpci    = var.worker_gpu_hostpci
+  worker_cpu_cores         = var.kubernetes_nodes_resources["dataplane"].cpu_cores
+  worker_memory_in_gb      = var.kubernetes_nodes_resources["dataplane"].memory_in_gb
+  worker_network_bridge    = var.worker_network_bridge
+  worker_subnets_by_fd     = var.worker_subnets_by_fd
+  worker_gpu_hostpci       = var.worker_gpu_hostpci
+  gpu_worker_fault_domains = var.gpu_worker_fault_domains
 }
 
 module "vault_pki_secret_backend" {
@@ -39,6 +40,7 @@ module "talos_cluster" {
   depends_on   = [module.nodes]
   source       = "./talos"
   cluster_name = var.cluster_name
+  dns_servers  = var.dns_server.ipv4_addresses
   node_data = {
     controlplanes = {
       for k, v in var.fault_domains :
@@ -52,13 +54,18 @@ module "talos_cluster" {
     workers = {
       for k, v in var.fault_domains :
       k => {
-        ip4_address  = "${cidrhost(var.worker_subnets_by_fd[k].cidr, 2)}"
-        install_disk = "/dev/vda"
+        ip4_address   = "${cidrhost(var.worker_subnets_by_fd[k].cidr, 2)}"
+        install_disk  = "/dev/vda"
+        install_image = contains(var.gpu_worker_fault_domains, k) ? var.gpu_talos_installer_image : null
         #hostname     = "k8s-${var.environment_short_name}-worker-${v.id}.dp.${k}.${local.dns.domain}" 
         hostname = "k8s-${var.environment_short_name}-worker-${v.id}"
       }
     }
   }
+  time_servers = [
+    "162.159.200.123",
+    "162.159.200.1",
+  ]
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
   talos_etcd_backup_s3          = var.talos_etcd_backup_s3
   enable_cluster_health_check   = !contains(["staging", "stage", "stg"], var.environment_name)
@@ -93,5 +100,3 @@ module "certs" {
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
   vault_pki_policy_paths        = var.vault_pki_policy_paths
 }
-
-

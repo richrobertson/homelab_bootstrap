@@ -98,9 +98,23 @@ variable "worker_gpu_hostpci" {
   description = "List of host PCI devices for GPU passthrough to fd-0 worker node (Intel iGPU)"
   type = list(object({
     device  = string
+    id      = optional(string)
     mapping = optional(string)
+    pcie    = optional(bool)
   }))
   default = null
+}
+
+variable "gpu_worker_fault_domains" {
+  description = "Fault domains whose worker nodes should receive GPU passthrough and the Talos GPU image."
+  type        = list(string)
+  default     = []
+}
+
+variable "gpu_talos_installer_image" {
+  description = "Optional Talos installer image for GPU-capable workers."
+  type        = string
+  default     = null
 }
 
 variable "talos_etcd_backup_s3" {

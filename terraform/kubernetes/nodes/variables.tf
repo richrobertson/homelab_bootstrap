@@ -92,7 +92,15 @@ variable "worker_gpu_hostpci" {
   description = "List of host PCI devices to passthrough to fd-0 worker node for GPU support (e.g., Intel iGPU)"
   type = list(object({
     device  = string
+    id      = optional(string)
     mapping = optional(string)
+    pcie    = optional(bool)
   }))
   default = null
+}
+
+variable "gpu_worker_fault_domains" {
+  description = "Fault domains whose worker nodes should receive GPU passthrough."
+  type        = list(string)
+  default     = []
 }

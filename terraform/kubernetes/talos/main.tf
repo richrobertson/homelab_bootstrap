@@ -4,13 +4,30 @@ locals {
   //machine_secrets = yamlencode(var.talos_secrets_yaml)
   machine_secrets      = module.secrets.machine_secrets
   client_configuration = module.secrets.client_configuration
+  dns_time_patch = yamlencode({
+    machine = merge(
+      length(var.dns_servers) > 0 ? {
+        network = {
+          nameservers = var.dns_servers
+        }
+      } : {},
+      length(var.time_servers) > 0 ? {
+        time = {
+          disabled = false
+          servers  = var.time_servers
+        }
+      } : {}
+    )
+  })
 
-
-  global_patches = [
-    file("${path.module}/files/extraKernelArgs.yaml"),
-    file("${path.module}/files/root-ca.yaml"),
-    file("${path.module}/files/rotate-server-certificates.yaml"),
-  ]
+  global_patches = concat(
+    [
+      file("${path.module}/files/extraKernelArgs.yaml"),
+      file("${path.module}/files/root-ca.yaml"),
+      file("${path.module}/files/rotate-server-certificates.yaml"),
+    ],
+    length(var.dns_servers) > 0 || length(var.time_servers) > 0 ? [local.dns_time_patch] : []
+  )
 }
 
 module "secrets" {
@@ -94,9 +111,20 @@ resource "talos_machine_configuration_apply" "worker" {
   for_each                    = var.node_data.workers
   node                        = each.value.ip4_address
   config_patches = [
-    templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname     = each.value.hostname
-      install_disk = each.value.install_disk
+    yamlencode({
+      machine = {
+        install = merge(
+          {
+            disk = each.value.install_disk
+          },
+          try(each.value.install_image, null) != null ? {
+            image = each.value.install_image
+          } : {}
+        )
+        network = {
+          hostname = each.value.hostname
+        }
+      }
     })
   ]
   timeouts = {
