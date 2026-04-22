@@ -66,6 +66,7 @@ resource "vault_pki_secret_backend_role" "role" {
   allow_bare_domains = var.vault_pki_role.allow_bare_domains
   allow_ip_sans      = true
   allow_subdomains   = var.vault_pki_role.allow_subdomains
+  require_cn         = false
   # Only set allowed_domains if: 1) explicitly provided in config, or 2) allow_any_name is false
   allowed_domains = (
     length(var.vault_pki_role.allowed_domains) > 0
@@ -83,7 +84,6 @@ output "vault_mount_path" {
 output "issuer_id" {
   value = vault_pki_secret_backend_intermediate_set_signed.intermediate_ca_cert.imported_issuers[0]
 }
-
 
 
 
