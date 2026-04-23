@@ -25,19 +25,21 @@ locals {
   talos_backup_env_suffix         = local.env.environment_name == "staging" ? "stage" : local.env.environment_name
   talos_backup_shared_bucket_name = "myrobertson-homelab-talos-etcd-backups"
 
-  volsync_restic_repository = try(data.vault_generic_secret.volsync_s3_settings.data["RESTIC_REPOSITORY"], null)
-  volsync_s3_region = coalesce(
+  volsync_restic_repository = var.volsync_s3_region_override != null ? null : try(data.vault_generic_secret.volsync_s3_settings.data["RESTIC_REPOSITORY"], null)
+  volsync_s3_region = var.aws_region != null ? var.aws_region : coalesce(
     var.volsync_s3_region_override,
     try(regex("s3\\.([^.]+)\\.amazonaws\\.com", local.volsync_restic_repository)[0], null),
     "us-west-2"
   )
+  aws_access_key_id     = var.aws_access_key_id != null ? var.aws_access_key_id : data.vault_generic_secret.volsync_s3_settings.data["AWS_ACCESS_KEY_ID"]
+  aws_secret_access_key = var.aws_secret_access_key != null ? var.aws_secret_access_key : data.vault_generic_secret.volsync_s3_settings.data["AWS_SECRET_ACCESS_KEY"]
 
   talos_etcd_backup_s3_from_vault = contains(["staging", "prod"], local.env.environment_name) ? {
     bucket            = local.talos_backup_shared_bucket_name
     region            = local.volsync_s3_region
     prefix            = local.talos_backup_env_suffix
-    access_key_id     = data.vault_generic_secret.volsync_s3_settings.data["AWS_ACCESS_KEY_ID"]
-    secret_access_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_SECRET_ACCESS_KEY"]
+    access_key_id     = local.aws_access_key_id
+    secret_access_key = local.aws_secret_access_key
   } : null
 }
 

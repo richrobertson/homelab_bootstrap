@@ -2,10 +2,10 @@
 
 provider "dns" {
   update {
-    server = "myrobertson.net"
+    server = "dc1.myrobertson.net"
     gssapi {
-      realm    = "myrobertson.net"
-      username = data.vault_generic_secret.windows_domain_admin.data["username"]
+      realm    = "MYROBERTSON.NET"
+      username = split("@", data.vault_generic_secret.windows_domain_admin.data["username"])[0]
       password = data.vault_generic_secret.windows_domain_admin.data["password"]
     }
   }
@@ -45,9 +45,9 @@ provider "proxmox" {
 }
 
 provider "aws" {
-  region     = local.volsync_s3_region
-  access_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_ACCESS_KEY_ID"]
-  secret_key = data.vault_generic_secret.volsync_s3_settings.data["AWS_SECRET_ACCESS_KEY"]
+  region     = local.aws_region
+  access_key = local.aws_access_key_id
+  secret_key = local.aws_secret_access_key
 }
 
 provider "talos" {}
