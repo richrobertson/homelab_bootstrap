@@ -63,8 +63,13 @@ module "talos_cluster" {
     }
   }
   time_servers = [
+    "time.cloudflare.com",
     "162.159.200.123",
     "162.159.200.1",
+    "129.6.15.28",
+    "129.6.15.29",
+    "132.163.96.1",
+    "132.163.97.1",
   ]
   vault_pki_secret_backend_path = module.vault_pki_secret_backend.vault_mount_path
   talos_etcd_backup_s3          = var.talos_etcd_backup_s3
