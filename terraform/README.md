@@ -12,9 +12,9 @@ AWS Elastic IP
   |
   v
 Small EC2 instance
-  - Security group opens SMTP, IMAPS, POP3S, web, and WireGuard
+  - Security group opens SMTP, submission, IMAP, POP3, web, ManageSieve, and WireGuard
   - WireGuard tunnel to home
-  - HAProxy in TCP mode forwards 25/80/443/465/587/993/995/4190
+  - HAProxy forwards mail ports and HTTPS over WireGuard, and redirects plain HTTP to HTTPS at the edge
   |
   v
 Home Mailu ingress/front container
@@ -23,13 +23,13 @@ Outbound path:
 Mailu/Postfix -> Amazon SES SMTP endpoint on 465 or 587
 ```
 
-SES is outbound-only in this design. Inbound mail still lands on Mailu through the EC2 edge and WireGuard tunnel.
+SES is the required production outbound relay in this design. Inbound mail still lands on Mailu through the EC2 edge and WireGuard tunnel.
 
 ## What Gets Deployed
 
 - One small EC2 instance, default `t4g.nano`
 - One Elastic IP attached to the instance
-- One security group with public ingress on TCP `25`, `80`, `443`, `465`, `587`, `993`, `995`, `4190` and UDP `51820`
+- One security group with public ingress on TCP `25`, `80`, `110`, `143`, `443`, `465`, `587`, `993`, `995`, `4190` and UDP `51820`
 - Optional dedicated VPC, public subnet, IGW, and route table if you do not supply an existing `subnet_id`
 - Optional SSM Session Manager IAM role/profile for instance access
 - WireGuard and HAProxy bootstrap via EC2 `user_data`
@@ -105,7 +105,7 @@ Manual otherwise:
 - Use `mail_edge_dns_records_to_create`
 - Use `mail_edge_certificate_dns01_cname` only if you intentionally mirror the ACME alias internally
 
-For the public internet-facing zone, point your Cloudflare `A` record for `mail_hostname` to `mail_edge_elastic_ip`, and point the `MX` record for `mail_domain` to `mail_hostname`.
+For the public internet-facing zone, point your Cloudflare `A` record for `mail_hostname` to `mail_edge_elastic_ip`, point the `MX` record for `mail_domain` to `mail_hostname`, and point `autoconfig.<mail_domain>` plus `autodiscover.<mail_domain>` at `mail_hostname`.
 
 ## Mailu Vault Integration
 
@@ -137,7 +137,7 @@ if your home WireGuard peer is routing only the Mailu Service IP across the tunn
 
 ## Mailu Outbound Relay Through SES
 
-Mailu supports a Postfix smarthost via `RELAYHOST`, `RELAYUSER`, and `RELAYPASSWORD`.
+Mailu supports a Postfix smarthost via `RELAYHOST`, `RELAYUSER`, and `RELAYPASSWORD`. Production Mailu is configured to use SES for outbound relay, so SES production sending approval is required before unrestricted outbound delivery will work.
 
 Recommended baseline:
 
@@ -158,7 +158,8 @@ You can also use port `465` if you prefer TLS wrapper instead of STARTTLS. The T
 
 ## Inbound vs Outbound Flow
 
-- Inbound mail and web traffic: public internet -> AWS Elastic IP -> EC2 security group -> HAProxy TCP frontend -> WireGuard tunnel -> home Mailu front-end
+- Inbound mail and HTTPS traffic: public internet -> AWS Elastic IP -> EC2 security group -> HAProxy -> WireGuard tunnel -> home Mailu front-end
+- Plain HTTP traffic on port `80` is redirected to HTTPS directly on the AWS edge.
 - Outbound mail: Mailu/Postfix -> SES SMTP endpoint -> recipient mail servers
 
 ## Reverse DNS

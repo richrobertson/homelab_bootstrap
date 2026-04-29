@@ -8,6 +8,10 @@ locals {
   authoritative_mail_record_name      = local.authoritative_mail_hostname == null || local.authoritative_mail_hostname == var.mail_domain ? null : trimsuffix(local.authoritative_mail_hostname, ".${var.mail_domain}")
   authoritative_mail_from_hostname    = var.mail_domain == null ? null : "${var.ses_mail_from_subdomain}.${var.mail_domain}"
   authoritative_mail_from_record_name = local.authoritative_mail_from_hostname == null || local.authoritative_mail_from_hostname == var.mail_domain ? null : trimsuffix(local.authoritative_mail_from_hostname, ".${var.mail_domain}")
+  authoritative_mail_autoconfig_records = local.manage_authoritative_mail_dns ? {
+    autoconfig   = local.authoritative_mail_hostname
+    autodiscover = local.authoritative_mail_hostname
+  } : {}
 
   authoritative_ses_records = length(module.mail_edge) == 0 ? [] : module.mail_edge[0].ses_dns_records_to_create
   ses_verification_record = local.manage_authoritative_ses_dns ? one([
@@ -64,6 +68,15 @@ resource "dns_mx_record_set" "mail_domain" {
     preference = 10
     exchange   = "${local.authoritative_mail_hostname}."
   }
+}
+
+resource "dns_cname_record" "mail_autoconfig" {
+  for_each = local.authoritative_mail_autoconfig_records
+
+  zone  = local.authoritative_mail_zone
+  name  = each.key
+  ttl   = 300
+  cname = "${each.value}."
 }
 
 resource "dns_txt_record_set" "ses_verification" {

@@ -8,7 +8,7 @@ terraform {
 }
 
 locals {
-  public_tcp_ports = [25, 80, 443, 465, 587, 993, 995, 4190]
+  public_tcp_ports = [25, 80, 110, 143, 443, 465, 587, 993, 995, 4190]
 
   common_tags = merge(
     {
@@ -79,6 +79,18 @@ locals {
       type    = "A"
       ttl     = 300
       records = [aws_eip.mail_edge.public_ip]
+    },
+    {
+      name    = "autoconfig.${var.mail_domain}"
+      type    = "CNAME"
+      ttl     = 300
+      records = [local.effective_mail_hostname]
+    },
+    {
+      name    = "autodiscover.${var.mail_domain}"
+      type    = "CNAME"
+      ttl     = 300
+      records = [local.effective_mail_hostname]
     },
     {
       name    = var.mail_domain
@@ -343,6 +355,19 @@ resource "aws_route53_record" "mail_mx" {
   type    = "MX"
   ttl     = 300
   records = ["10 ${local.effective_mail_hostname}."]
+}
+
+resource "aws_route53_record" "mail_autoconfig" {
+  for_each = local.manage_public_mail_dns_records ? toset([
+    "autoconfig.${var.mail_domain}",
+    "autodiscover.${var.mail_domain}",
+  ]) : toset([])
+
+  zone_id = var.route53_zone_id
+  name    = each.value
+  type    = "CNAME"
+  ttl     = 300
+  records = [local.effective_mail_hostname]
 }
 
 resource "aws_eip_domain_name" "mail_edge" {
