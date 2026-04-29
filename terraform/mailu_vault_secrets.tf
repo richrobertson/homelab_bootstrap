@@ -17,6 +17,13 @@ locals {
   mailu_values_yaml = local.mailu_values == null ? null : yamlencode(local.mailu_values)
 }
 
+check "prod_mailu_requires_ses_relay" {
+  assert {
+    condition     = local.env.environment_name != "prod" || !var.mail_edge_enabled || var.enable_ses
+    error_message = "Production Mailu must use the SES relay. Keep enable_ses=true when mail_edge_enabled=true in prod."
+  }
+}
+
 resource "random_password" "mailu_secret_key" {
   count = local.manage_mailu_app_secret ? 1 : 0
 
