@@ -127,7 +127,7 @@ data "aws_iam_policy_document" "ses_smtp_send" {
   statement {
     effect    = "Allow"
     actions   = ["ses:SendRawEmail"]
-    resources = [aws_ses_domain_identity.mail[0].arn]
+    resources = ["*"]
   }
 }
 
