@@ -110,6 +110,26 @@ output "mail_edge_reverse_dns_ptr_record" {
   value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].reverse_dns_ptr_record)
 }
 
+output "mail_edge_email_canary_function_name" {
+  description = "Lambda function name for the email canary."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].email_canary_function_name)
+}
+
+output "mail_edge_email_canary_alert_topic_arn" {
+  description = "SNS topic ARN used by the email canary for alerts."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].email_canary_alert_topic_arn)
+}
+
+output "mail_edge_email_canary_schedule_expression" {
+  description = "EventBridge schedule expression for the email canary."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].email_canary_schedule_expression)
+}
+
+output "mail_edge_email_canary_probe_names" {
+  description = "Names of the email canary probes configured for the Lambda."
+  value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].email_canary_probe_names)
+}
+
 output "mailu_initial_admin_account" {
   description = "Initial Mailu administrator account email address."
   value       = local.manage_mailu_app_secret ? local.mailu_initial_admin_user : null

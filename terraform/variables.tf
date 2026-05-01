@@ -239,3 +239,78 @@ variable "configure_eip_reverse_dns" {
   type        = bool
   default     = false
 }
+
+variable "enable_email_canary" {
+  description = "Whether to create the AWS Lambda email canary for SES send and mailbox delivery checks."
+  type        = bool
+  default     = false
+}
+
+variable "email_canary_from_address" {
+  description = "Verified SES sender address used by the email canary."
+  type        = string
+  default     = null
+}
+
+variable "email_canary_to_address" {
+  description = "Recipient mailbox that the email canary verifies through IMAP."
+  type        = string
+  default     = null
+}
+
+variable "email_canary_imap_secret_arn" {
+  description = "Secrets Manager secret ARN containing IMAP settings as JSON: host, username, password, and optional port, folder, use_ssl."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "email_canary_alert_phone_number" {
+  description = "Optional E.164 cellphone number override for SMS alerts from the email canary. Defaults to email_canary_alerts_vault_path."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "email_canary_alerts_vault_path" {
+  description = "Vault KV path containing email canary alert settings. Expected key: phone_number."
+  type        = string
+  default     = "secret/mailu/prod/email-canary-alerts"
+}
+
+variable "email_canary_delivery_timeout_seconds" {
+  description = "Maximum end-to-end delivery time before the email canary alerts."
+  type        = number
+  default     = 240
+}
+
+variable "enable_mailu_dovecot_canary" {
+  description = "Whether the AWS Lambda email canary should also verify delivery into a Mailu-hosted mailbox through Dovecot IMAP."
+  type        = bool
+  default     = false
+}
+
+variable "mailu_dovecot_canary_from_address" {
+  description = "Optional SES sender address for the Mailu Dovecot probe. Defaults to email_canary_from_address."
+  type        = string
+  default     = null
+}
+
+variable "mailu_dovecot_canary_to_address" {
+  description = "Mailu-hosted recipient address that should receive the inbound probe."
+  type        = string
+  default     = null
+}
+
+variable "mailu_dovecot_canary_imap_secret_arn" {
+  description = "Secrets Manager secret ARN for the Mailu Dovecot IMAP credentials."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "mailu_dovecot_canary_delivery_timeout_seconds" {
+  description = "Maximum end-to-end delivery time for the Mailu Dovecot probe."
+  type        = number
+  default     = 240
+}

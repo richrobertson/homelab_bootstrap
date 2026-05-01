@@ -74,3 +74,23 @@ output "reverse_dns_ptr_record" {
   description = "PTR record reported by AWS when reverse DNS is managed here."
   value       = try(aws_eip_domain_name.mail_edge[0].ptr_record, null)
 }
+
+output "email_canary_function_name" {
+  description = "Lambda function name for the email canary."
+  value       = var.enable_email_canary ? aws_lambda_function.email_canary[0].function_name : null
+}
+
+output "email_canary_alert_topic_arn" {
+  description = "SNS topic ARN used by the email canary for alerts."
+  value       = var.enable_email_canary ? aws_sns_topic.email_canary_alerts[0].arn : null
+}
+
+output "email_canary_schedule_expression" {
+  description = "EventBridge schedule expression for the email canary."
+  value       = var.enable_email_canary ? aws_cloudwatch_event_rule.email_canary[0].schedule_expression : null
+}
+
+output "email_canary_probe_names" {
+  description = "Names of the email canary probes configured for the Lambda."
+  value       = [for probe in local.email_canary_probes : probe.name]
+}

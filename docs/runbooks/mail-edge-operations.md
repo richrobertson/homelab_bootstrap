@@ -13,6 +13,17 @@ At minimum, set:
 - `wireguard_ec2_private_key`
 - `wireguard_ec2_public_key`
 
+For continuous SES delivery checks, also set `enable_email_canary = true` plus
+`email_canary_from_address`, `email_canary_to_address`,
+`email_canary_imap_secret_arn`. SMS delivery uses the `phone_number` key from
+`email_canary_alerts_vault_path`, which defaults to
+`secret/mailu/prod/email-canary-alerts`.
+
+To verify delivery into Kubernetes-hosted Mailu Dovecot folders, set
+`enable_mailu_dovecot_canary = true` plus
+`mailu_dovecot_canary_to_address` and
+`mailu_dovecot_canary_imap_secret_arn`.
+
 Generate the EC2 WireGuard keypair before applying. Terraform expects both
 halves explicitly so it can bootstrap the instance and render the home peer
 config without depending on a local shell helper.
@@ -38,6 +49,56 @@ wireguard_home_allowed_ips = ["10.31.0.73/32"]
    automation is not managing them.
 6. Reconcile the Mailu Flux overlay after the Vault secrets appear so the
    cluster picks up the relay credentials.
+
+## Email Canary
+
+The optional email canary runs from AWS Lambda every five minutes. It can run
+both an external delivery/reputation probe and a Mailu Dovecot probe in the
+same invocation. Each probe sends a unique message through SES, polls the
+configured recipient mailbox over IMAP, and publishes an SNS alert, including
+SMS when configured, if SES rejects the send or the message is not visible
+before the timeout.
+
+Create the IMAP settings as an AWS Secrets Manager secret before enabling the
+canary:
+
+```json
+{
+  "host": "imap.example.com",
+  "username": "canary@example.com",
+  "password": "example-password",
+  "folder": "INBOX",
+  "port": 993,
+  "use_ssl": true
+}
+```
+
+Store the SMS destination in Vault:
+
+```sh
+vault kv put secret/mailu/prod/email-canary-alerts phone_number="+15551234567"
+```
+
+Use a mailbox outside the SES/Mailu path when possible. That makes delayed
+delivery, receiver-side reputation blocks, and filtering failures show up as a
+missed canary instead of only proving local loopback.
+
+For the Mailu Dovecot probe, create a separate secret for a Mailu-hosted
+mailbox and point IMAP at the public edge hostname:
+
+```json
+{
+  "host": "mail.myrobertson.net",
+  "username": "canary@myrobertson.net",
+  "password": "example-password",
+  "folder": "INBOX",
+  "port": 993,
+  "use_ssl": true
+}
+```
+
+That path verifies `SES -> public MX -> AWS edge -> WireGuard ->
+mailu-front-ext on 10.31.0.73 -> Mailu/Dovecot -> IMAP folder`.
 
 ## Manual DNS Outputs
 

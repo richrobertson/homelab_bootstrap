@@ -28,6 +28,9 @@ Mailu/Postfix -> Amazon SES SMTP endpoint on 465 or 587
 SES is the required production outbound relay in this design. Inbound mail lands
 on Mailu through the EC2 edge and WireGuard tunnel.
 
+The [email canary design](email-canary.md) adds continuous delivery checks on
+top of this transport path.
+
 ## Terraform Scope
 
 [terraform/mail_edge](../../terraform/mail_edge/README.md) creates:
@@ -81,5 +84,6 @@ Secrets Operator.
 ## Related Documents
 
 - [mail_edge component README](../../terraform/mail_edge/README.md)
+- [Email canary design](email-canary.md)
 - [Mail edge operations](../runbooks/mail-edge-operations.md)
 - [Bootstrap architecture](bootstrap-architecture.md)

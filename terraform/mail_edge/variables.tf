@@ -190,3 +190,115 @@ variable "configure_eip_reverse_dns" {
   type        = bool
   default     = false
 }
+
+variable "enable_email_canary" {
+  description = "Whether to create the Lambda email canary that sends a SES test message and verifies mailbox delivery."
+  type        = bool
+  default     = false
+}
+
+variable "email_canary_from_address" {
+  description = "Verified SES sender address used by the email canary."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = !var.enable_email_canary || (var.email_canary_from_address != null && length(trimspace(var.email_canary_from_address)) > 0)
+    error_message = "email_canary_from_address must be set when enable_email_canary is true."
+  }
+}
+
+variable "email_canary_to_address" {
+  description = "Recipient mailbox that the email canary checks through IMAP."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = !var.enable_email_canary || (var.email_canary_to_address != null && length(trimspace(var.email_canary_to_address)) > 0)
+    error_message = "email_canary_to_address must be set when enable_email_canary is true."
+  }
+}
+
+variable "email_canary_imap_secret_arn" {
+  description = "Secrets Manager secret ARN containing IMAP settings as JSON: host, username, password, and optional port, folder, use_ssl."
+  type        = string
+  default     = null
+  sensitive   = true
+
+  validation {
+    condition     = !var.enable_email_canary || (var.email_canary_imap_secret_arn != null && length(trimspace(var.email_canary_imap_secret_arn)) > 0)
+    error_message = "email_canary_imap_secret_arn must be set when enable_email_canary is true."
+  }
+}
+
+variable "email_canary_alert_phone_number" {
+  description = "Optional E.164 cellphone number for SMS alerts, for example +15551234567. Leave null to publish only to the SNS topic."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "email_canary_schedule_expression" {
+  description = "EventBridge schedule expression for the canary."
+  type        = string
+  default     = "rate(5 minutes)"
+}
+
+variable "email_canary_delivery_timeout_seconds" {
+  description = "Maximum end-to-end delivery time before the canary alerts."
+  type        = number
+  default     = 240
+}
+
+variable "email_canary_lambda_timeout_seconds" {
+  description = "Lambda timeout. Keep this above email_canary_delivery_timeout_seconds plus a small buffer."
+  type        = number
+  default     = 300
+}
+
+variable "email_canary_log_retention_days" {
+  description = "CloudWatch Logs retention for the email canary Lambda."
+  type        = number
+  default     = 14
+}
+
+variable "enable_mailu_dovecot_canary" {
+  description = "Whether the email canary should also verify delivery into a Mailu-hosted mailbox through Dovecot IMAP."
+  type        = bool
+  default     = false
+}
+
+variable "mailu_dovecot_canary_from_address" {
+  description = "Optional SES sender address for the Mailu Dovecot probe. Defaults to email_canary_from_address."
+  type        = string
+  default     = null
+}
+
+variable "mailu_dovecot_canary_to_address" {
+  description = "Mailu-hosted recipient address that should receive the inbound probe."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = !var.enable_mailu_dovecot_canary || (var.mailu_dovecot_canary_to_address != null && length(trimspace(var.mailu_dovecot_canary_to_address)) > 0)
+    error_message = "mailu_dovecot_canary_to_address must be set when enable_mailu_dovecot_canary is true."
+  }
+}
+
+variable "mailu_dovecot_canary_imap_secret_arn" {
+  description = "Secrets Manager secret ARN for the Mailu Dovecot IMAP credentials. Use host mail.myrobertson.net, port 993, use_ssl true to traverse the AWS edge into Kubernetes."
+  type        = string
+  default     = null
+  sensitive   = true
+
+  validation {
+    condition     = !var.enable_mailu_dovecot_canary || (var.mailu_dovecot_canary_imap_secret_arn != null && length(trimspace(var.mailu_dovecot_canary_imap_secret_arn)) > 0)
+    error_message = "mailu_dovecot_canary_imap_secret_arn must be set when enable_mailu_dovecot_canary is true."
+  }
+}
+
+variable "mailu_dovecot_canary_delivery_timeout_seconds" {
+  description = "Maximum end-to-end delivery time for the Mailu Dovecot probe."
+  type        = number
+  default     = 240
+}
