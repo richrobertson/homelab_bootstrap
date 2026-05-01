@@ -39,6 +39,10 @@ on Mailu through the EC2 edge and WireGuard tunnel.
 - SES domain identity, DKIM, custom MAIL FROM domain, and SMTP IAM credentials.
 - Optional Route53 DNS records and Elastic IP reverse DNS.
 
+The stable Elastic IP and SES-related resources are protected with Terraform
+`prevent_destroy` lifecycle rules so accidental module removal, `enable_ses =
+false`, or destructive plans fail before breaking mail delivery.
+
 The root files [mail_edge.tf](../../terraform/mail_edge.tf),
 [authoritative_mail_dns.tf](../../terraform/authoritative_mail_dns.tf), and
 [mailu_vault_secrets.tf](../../terraform/mailu_vault_secrets.tf) connect the

@@ -57,6 +57,9 @@ For the public internet-facing zone, point the Cloudflare `A` record for
 - Public `myrobertson.net` DNS is currently delegated to Cloudflare. The
   AD-backed DNS provider in this root is split-horizon/internal only and is
   disabled by default for mail records.
+- The Elastic IP, SES domain identity, SES DKIM configuration, SES MAIL FROM
+  configuration, SES verification, and SES SMTP IAM credentials are protected by
+  Terraform `prevent_destroy` lifecycle rules.
 - The public Mailu certificate uses direct Cloudflare DNS-01 for
   `mail.myrobertson.net`. Any `_acme-challenge` CNAME created here is for
   optional split-horizon/internal DNS only.

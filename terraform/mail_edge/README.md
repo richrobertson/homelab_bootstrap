@@ -13,6 +13,14 @@ home-hosted Mailu deployment.
 - Create SES identity, DKIM, custom MAIL FROM, and SMTP credentials.
 - Optionally create Route53 records and Elastic IP reverse DNS.
 
+## Destroy Guardrails
+
+The stable AWS public IP and SES sending identity are protected with Terraform
+`prevent_destroy` lifecycle rules. Plans that would destroy the Elastic IP, SES
+domain identity, DKIM configuration, MAIL FROM configuration, SES verification,
+or SES SMTP IAM credentials should fail rather than silently breaking inbound
+mail, outbound relay, or DNS reputation.
+
 ## Traffic Flow
 
 ```text

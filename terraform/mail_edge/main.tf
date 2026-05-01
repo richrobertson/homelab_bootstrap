@@ -330,6 +330,10 @@ resource "aws_eip" "mail_edge" {
   tags = merge(local.common_tags, {
     Name = "${local.instance_name}-eip"
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_eip_association" "mail_edge" {
@@ -381,12 +385,20 @@ resource "aws_ses_domain_identity" "mail" {
   count = var.enable_ses ? 1 : 0
 
   domain = var.mail_domain
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_ses_domain_dkim" "mail" {
   count = var.enable_ses ? 1 : 0
 
   domain = aws_ses_domain_identity.mail[0].domain
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_ses_domain_mail_from" "mail" {
@@ -394,6 +406,10 @@ resource "aws_ses_domain_mail_from" "mail" {
 
   domain           = aws_ses_domain_identity.mail[0].domain
   mail_from_domain = local.mail_from_domain
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_route53_record" "ses_verification" {
@@ -442,6 +458,10 @@ resource "aws_ses_domain_identity_verification" "mail" {
   domain = aws_ses_domain_identity.mail[0].domain
 
   depends_on = [aws_route53_record.ses_verification]
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_user" "ses_smtp" {
@@ -449,6 +469,10 @@ resource "aws_iam_user" "ses_smtp" {
 
   name = local.smtp_user_name
   tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_user_policy" "ses_smtp" {
@@ -457,10 +481,18 @@ resource "aws_iam_user_policy" "ses_smtp" {
   name   = "${local.smtp_user_name}-send"
   user   = aws_iam_user.ses_smtp[0].name
   policy = data.aws_iam_policy_document.ses_smtp_send[0].json
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_access_key" "ses_smtp" {
   count = var.enable_ses ? 1 : 0
 
   user = aws_iam_user.ses_smtp[0].name
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
