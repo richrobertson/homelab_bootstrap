@@ -1,122 +1,146 @@
 # homelab_bootstrap
 
-First-stage cluster bootstrap and orchestration before Flux management.
+`homelab_bootstrap` is the first-stage infrastructure-as-code layer for the
+homelab. It creates the substrate that Kubernetes depends on, builds Talos
+clusters on Proxmox, wires those clusters into Vault, and finally hands ongoing
+in-cluster reconciliation to Flux.
 
-## Related repositories
+The repository is intentionally focused on the part of the system that has to
+exist before GitOps can take over. Once the cluster is reachable and Flux is
+bootstrapped, application controllers, gateways, workloads, dashboards, and most
+Kubernetes manifests live in `homelab_flux`.
 
-This repository is one part of a shared homelab stack:
+## Repository Map
 
-- [homelab_bootstrap](https://github.com/richrobertson/homelab_bootstrap) - first-stage cluster bootstrap/orchestration before Flux management.
-- [homelab_ansible](https://github.com/richrobertson/homelab_ansible) - host and node configuration automation outside Kubernetes manifests.
-- [homelab_flux](https://github.com/richrobertson/homelab_flux) - in-cluster GitOps state (apps, controllers, configs, and gateway resources).
+- `terraform/` - primary Terraform root for substrate, networking, Talos,
+  Kubernetes, Vault integration, Flux bootstrap, backups, and the optional AWS
+  mail edge.
+- `docs/` - design documents, operational runbooks, and a component navigation
+  index.
+- `scripts/backup_talos_etcd_to_s3.sh` - operational helper that exports the
+  Talos config from Terraform, snapshots etcd, and uploads the snapshot to S3.
+- `Jenkinsfile` - CI/CD pipeline that initializes Terraform, plans changes,
+  posts pull-request plan summaries, applies approved mainline changes, and
+  runs the etcd backup job after mainline applies.
 
-## Recreating cluster
-## terraform state rm module.flux.github_repository.this
-terraform destroy -auto-approve  
-## terraform import module.flux.github_repository.this richrobertson/homelab_flux
-terraform apply -auto-approve
+## Documentation Map
 
+- [Docs index](docs/README.md) - start here for the full navigation map.
+- [Bootstrap architecture](docs/design/bootstrap-architecture.md) - high-level
+  walkthrough of substrate, overlay, Vault, Flux, and optional edge components.
+- [Environment model](docs/design/environment-model.md) - workspace selection,
+  fault domains, network identity, node sizing, and GPU settings.
+- [Terraform root](terraform/README.md) - entry point for the executable
+  Terraform layout and component links.
+- [Runbooks](docs/runbooks/README.md) - operational procedures for Terraform,
+  kubeconfig/talosconfig export, cluster recreation, backups, GPU workers, and
+  Mailu edge operations.
+- [Component index](docs/components/README.md) - crosslinked list of each
+  bootstrap component and its local README.
 
-## Update local kubernetes context
+## How This Fits With The Other Repositories
 
-### STAGE
-terraform output -raw kubeconfig > ~/.kube/config.stage
-terraform output -raw talosconfig > ~/.talos/config.stage
+This repository is one part of a three-layer homelab stack:
 
-### PROD
-terraform output -raw kubeconfig > ~/.kube/config.prod
-terraform output -raw talosconfig > ~/.talos/config.prod
+- [homelab_bootstrap](https://github.com/richrobertson/homelab_bootstrap) -
+  creates the pre-GitOps substrate and bootstraps Kubernetes/Flux.
+- [homelab_ansible](https://github.com/richrobertson/homelab_ansible) -
+  configures hosts and systems that sit outside Kubernetes manifests.
+- [homelab_flux](https://github.com/richrobertson/homelab_flux) - owns the
+  in-cluster GitOps state after bootstrap: controllers, platform services,
+  application overlays, gateway resources, monitoring, and backup workloads.
 
-## Talos GPU Worker Enablement
+In practice, `homelab_bootstrap` lays the road, `homelab_ansible` configures
+important roadside equipment, and `homelab_flux` drives the steady-state cluster
+operations.
 
-GPU worker bootstrap is controlled by environment locals in `terraform/environment.tf`:
+## High-Level Architecture
 
-- `gpu_worker_fault_domains` - fault domains whose worker nodes should be configured as GPU-capable.
-- `gpu_talos_installer_image` - custom Talos installer image used for GPU workers during install or upgrade.
+The bootstrap flow is a layered handoff from Terraform-managed substrate to
+Flux-managed in-cluster state. The complete walkthrough lives in
+[Bootstrap Architecture](docs/design/bootstrap-architecture.md).
 
-Current GPU schematic committed for staging:
+Optional edge components are also managed here when enabled:
 
-- schematic id `6698d6f136c5bb37ca8bb8482c9084305084da0a5ead1f4dcae760796f8ab3a2`
-- extensions:
-	- `siderolabs/nvidia-container-toolkit-production`
-	- `siderolabs/nvidia-open-gpu-kernel-modules-production`
+- AWS Mailu edge: Elastic IP, EC2, security group, WireGuard, HAProxy, SES, and
+  related DNS outputs.
+- Talos etcd backup bucket and Vault-backed backup configuration.
+- Mailu Vault secrets that the Flux-managed Mailu overlay consumes.
 
-Example:
+## Substrate Components
 
-```hcl
-gpu_worker_fault_domains = ["fd-0"]
-gpu_talos_installer_image = "factory.talos.dev/metal-installer/<schematic-id>:v1.12.5"
-```
+The substrate is the small set of services that the rest of the environment
+expects to already exist. In the production workspace, Terraform creates:
 
-Talos system extensions are not applied by listing extension names in machine config. Build a custom installer image with the required NVIDIA extensions, then set `gpu_talos_installer_image` to that image reference.
+- `subdb1` PostgreSQL VM at `192.168.7.200`.
+- PowerDNS recursive DNS server exposed as `ns1.myrobertson.net`.
+- PowerDNS authoritative DNS server exposed as `subns.myrobertson.net`.
 
-For existing workers booted from a pre-installed disk image, setting `gpu_talos_installer_image` makes the desired installer explicit in machine config, but the extensions only take effect when the node is reinstalled or upgraded with that image.
+Non-production workspaces do not create the substrate. They point at the
+production substrate DNS endpoints instead, which keeps staging and development
+clusters lightweight while still allowing them to resolve the same homelab
+zones.
 
-### Staging GPU Worker Rollout
+See [terraform/substrate](terraform/substrate/README.md) for the component
+README and [Bootstrap Architecture](docs/design/bootstrap-architecture.md) for
+the design context.
 
-Current staging target:
+## Overlay Components
 
-- `gpu_worker_fault_domains = ["fd-0"]`
-- `gpu_talos_installer_image = "factory.talos.dev/metal-installer/6698d6f136c5bb37ca8bb8482c9084305084da0a5ead1f4dcae760796f8ab3a2:v1.11.1"`
+In this repository, "overlay" means the components layered over the raw
+substrate to make a usable Kubernetes platform:
 
-Suggested apply sequence:
+- Proxmox SDN overlays provide the control-plane and data-plane networks.
+- Talos machine configuration turns Proxmox VMs into Kubernetes nodes.
+- Vault auth, secret, and PKI configuration gives in-cluster controllers a way
+  to retrieve secrets and issue certificates.
+- Flux bootstrap installs the GitOps controller and points it at
+  `homelab_flux`.
+- Optional AWS Mailu edge bridges public mail traffic to the home-hosted Mailu
+  deployment.
 
-```bash
-cd terraform
-terraform workspace select staging
-terraform plan -no-color -out staging-gpu-worker.plan
-terraform apply staging-gpu-worker.plan
-terraform output -raw kubeconfig > ~/.kube/config.stage
-terraform output -raw talosconfig > ~/.talos/config.stage
-kubectl --kubeconfig ~/.kube/config.stage get nodes --show-labels
-kubectl --kubeconfig ~/.kube/config.stage describe node k8s-stg-worker-0 | grep -A3 -E 'Labels:|Taints:|Allocatable'
-```
+After these pieces are in place, most day-two platform work should happen in
+`homelab_flux`, not here.
 
-Expected result after bootstrap-side changes:
+See the [component index](docs/components/README.md) for the local README next
+to each Terraform component.
 
-- worker `k8s-stg-worker-0` receives label `hardware.gpu=true`
-- staging now points `fd-0` at a concrete Talos GPU installer image for future install or upgrade operations
-- Kubernetes worker is ready for NVIDIA device plugin deployment from `homelab_flex`
+## Environment Model
 
-Recommended next step for staging:
+Terraform workspaces select the environment definition in
+`terraform/environment.tf`.
 
-1. Build or publish a Talos Image Factory schematic that includes the required NVIDIA system extensions.
-2. Set `gpu_talos_installer_image` in `terraform/environment.tf` for the `staging` workspace.
-3. Re-run `terraform plan` and then upgrade or reinstall `k8s-stg-worker-0` with that installer image.
+| Workspace | Environment | Short name | Cluster | Notes |
+| --- | --- | --- | --- | --- |
+| `production` | `prod` | `prod` | `prod` | Creates the production cluster and production-only substrate resources. |
+| `staging` | `staging` | `stg` | `staging` | Creates a staging Talos cluster that reuses production substrate DNS. |
+| `default` | `development` | `dev` | `development` | Development-sized cluster defaults. |
 
-## Talos etcd backups to shared S3 bucket
+Each environment defines VLAN tags, VXLAN octets, node sizing, GPU worker
+selection, Talos installer image overrides, and Vault PKI policy rules.
 
-Talos v1.12 machine config does not support `cluster.etcd.backup` fields, so backups are handled out-of-band via `talosctl etcd snapshot`.
+See [Environment Model](docs/design/environment-model.md) for the full
+workspace and fault-domain walkthrough.
 
-### Scripted backup
+## Bootstrap Walkthrough
 
-Run the backup script from repository root:
+1. Terraform reads credentials and shared settings from Vault, including
+   Proxmox, GitHub, Windows DNS, substrate database, Talos, and S3 credentials.
+2. Production creates the substrate VMs and DNS services. Other workspaces use
+   the existing substrate DNS endpoints.
+3. Terraform creates Proxmox SDN EVPN/VXLAN networking for the selected
+   workspace.
+4. Terraform creates Talos control-plane and worker VMs across three fault
+   domains mapped to `pve3`, `pve4`, and `pve5`.
+5. Talos machine configuration is rendered and applied, the first control-plane
+   node bootstraps etcd, and Terraform exports kubeconfig and talosconfig.
+6. Vault is configured so cluster workloads can authenticate, retrieve secrets,
+   and request certificates.
+7. Flux is bootstrapped against `richrobertson/homelab_flux` at
+   `clusters/<cluster_name>`.
+8. Flux takes over the in-cluster overlay: controllers, platform services,
+   application deployments, gateways, monitoring, and ongoing reconciliation.
 
-```bash
-bash scripts/backup_talos_etcd_to_s3.sh
-```
-
-What the script does:
-
-1. Detects the current Terraform workspace (`staging`, `production`, etc.).
-2. Exports `talosconfig` from Terraform output.
-3. Uses Vault path `secret/volsync/prod/plex-config-ceph` to load S3 credentials.
-4. Takes an etcd snapshot using `talosctl`.
-5. Uploads snapshot to shared bucket `myrobertson-homelab-talos-etcd-backups` under prefix:
-	- `stage/` for `staging`
-	- `prod/` for `production` or `prod`
-
-Required CLIs on the runner:
-
-- `terraform`
-- `talosctl`
-- `vault`
-- `aws`
-
-### Jenkins integration
-
-The Jenkins pipeline now includes stage `Talos etcd backup to S3`, which runs on `main` for non-PR builds:
-
-```groovy
-sh 'bash scripts/backup_talos_etcd_to_s3.sh'
-```
+For Terraform-specific commands, operational notes, and component details, see
+[`terraform/README.md`](terraform/README.md). For operator procedures, see
+[Runbooks](docs/runbooks/README.md).
