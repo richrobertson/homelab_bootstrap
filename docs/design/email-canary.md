@@ -33,7 +33,7 @@ uses two probes:
 
 - `external`: a general SES delivery probe.
 - `mailu-dovecot`: verifies delivery all the way into the Mailu Dovecot IMAP
-  folder.
+  folder through the public MX, AWS edge, WireGuard, and Mailu front ClusterIP.
 
 ## Mailu Delivery Path
 

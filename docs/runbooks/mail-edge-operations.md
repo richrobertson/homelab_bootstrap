@@ -28,11 +28,14 @@ Generate the EC2 WireGuard keypair before applying. Terraform expects both
 halves explicitly so it can bootstrap the instance and render the home peer
 config without depending on a local shell helper.
 
-For the production Mailu overlay, use the expected home-side Mailu Service IP:
+For the production AWS edge, forward HAProxy into the Mailu front ClusterIP.
+Keep the MetalLB VIP for LAN clients, but avoid using it as the tunnel target;
+traffic arriving from WireGuard does not reliably complete through that VIP
+path.
 
 ```hcl
-home_mailu_tunnel_ip       = "10.31.0.73"
-wireguard_home_allowed_ips = ["10.31.0.73/32"]
+home_mailu_tunnel_ip       = "10.109.196.109"
+wireguard_home_allowed_ips = ["10.31.0.73/32", "10.109.196.109/32"]
 ```
 
 ## Post-Apply Steps
@@ -98,7 +101,7 @@ mailbox and point IMAP at the public edge hostname:
 ```
 
 That path verifies `SES -> public MX -> AWS edge -> WireGuard ->
-mailu-front-ext on 10.31.0.73 -> Mailu/Dovecot -> IMAP folder`.
+mailu-front ClusterIP on 10.109.196.109 -> Mailu/Dovecot -> IMAP folder`.
 
 ## Manual DNS Outputs
 

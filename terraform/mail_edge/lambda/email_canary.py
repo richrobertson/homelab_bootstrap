@@ -183,7 +183,7 @@ def find_message(secret, folder, subject, token):
         if select_status != "OK":
             raise RuntimeError(f"Could not select IMAP folder {folder}")
 
-        search_status, search_data = imap.search(None, "SUBJECT", quote_imap(subject))
+        search_status, search_data = imap.search(None, "TEXT", quote_imap(token))
         if search_status != "OK":
             raise RuntimeError("IMAP search failed")
 
