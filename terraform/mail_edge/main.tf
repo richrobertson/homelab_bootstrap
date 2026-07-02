@@ -12,7 +12,7 @@ terraform {
 }
 
 locals {
-  public_tcp_ports = [25, 80, 110, 143, 443, 465, 587, 993, 995, 4190]
+  public_tcp_ports = [25, 80, 443, 465, 587, 993, 995, 4190]
 
   common_tags = merge(
     {
@@ -157,13 +157,17 @@ data "aws_iam_policy_document" "ec2_assume_role" {
   }
 }
 
+data "aws_caller_identity" "current" {
+  count = var.enable_ses ? 1 : 0
+}
+
 data "aws_iam_policy_document" "ses_smtp_send" {
   count = var.enable_ses ? 1 : 0
 
   statement {
     effect    = "Allow"
     actions   = ["ses:SendRawEmail"]
-    resources = ["*"]
+    resources = ["arn:${data.aws_partition.current.partition}:ses:${var.aws_region}:${data.aws_caller_identity.current[0].account_id}:identity/${var.mail_domain}"]
   }
 }
 
@@ -438,6 +442,14 @@ resource "aws_instance" "mail_edge" {
   tags = merge(local.common_tags, {
     Name = local.instance_name
   })
+
+  lifecycle {
+    ignore_changes = [
+      ami,
+      user_data,
+      user_data_base64,
+    ]
+  }
 }
 
 resource "aws_eip" "mail_edge" {
@@ -659,6 +671,14 @@ resource "aws_sns_topic_subscription" "email_canary_sms" {
   topic_arn = aws_sns_topic.email_canary_alerts[0].arn
   protocol  = "sms"
   endpoint  = var.email_canary_alert_phone_number
+
+  lifecycle {
+    ignore_changes = [
+      confirmation_timeout_in_minutes,
+      endpoint,
+      endpoint_auto_confirms,
+    ]
+  }
 }
 
 resource "aws_cloudwatch_log_group" "email_canary" {

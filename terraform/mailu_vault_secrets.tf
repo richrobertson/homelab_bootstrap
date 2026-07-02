@@ -1,13 +1,14 @@
 locals {
-  manage_mailu_app_secret   = local.env.environment_name == "prod" && var.mail_domain != null
-  manage_mailu_edge_secrets = local.env.environment_name == "prod" && length(module.mail_edge) > 0
+  manage_mailu_app_secret           = local.env.environment_name == "prod" && var.mail_domain != null
+  manage_mailu_edge_runtime_secrets = local.env.environment_name == "prod" && var.mail_domain != null && length(module.mail_edge) > 0
+  manage_mailu_edge_secrets         = local.env.environment_name == "prod" && length(module.mail_edge) > 0
 
-  mailu_public_hostname    = var.mail_domain == null ? null : coalesce(var.mail_hostname, "mail.${var.mail_domain}")
-  mailu_initial_admin_user = var.mail_domain == null ? null : "admin@${var.mail_domain}"
-  mailu_home_service_ip    = local.env.environment_name == "prod" ? "10.31.0.73" : null
+  mailu_public_hostname    = local.effective_mail_domain == null ? null : local.effective_mail_hostname
+  mailu_initial_admin_user = local.effective_mail_domain == null ? null : "admin@${local.effective_mail_domain}"
+  mailu_home_service_ip    = local.env.environment_name == "prod" ? local.effective_home_mailu_tunnel_ip : null
 
-  mailu_values = local.manage_mailu_edge_secrets ? merge(
-    var.enable_ses ? {
+  mailu_values = local.manage_mailu_edge_runtime_secrets ? merge(
+    local.effective_enable_ses ? {
       externalRelay = {
         host = "[${module.mail_edge[0].ses_smtp_endpoint}]:587"
       }
@@ -19,7 +20,7 @@ locals {
 
 check "prod_mailu_requires_ses_relay" {
   assert {
-    condition     = local.env.environment_name != "prod" || !var.mail_edge_enabled || var.enable_ses
+    condition     = local.env.environment_name != "prod" || !local.effective_mail_edge_enabled || local.effective_enable_ses
     error_message = "Production Mailu must use the SES relay. Keep enable_ses=true when mail_edge_enabled=true in prod."
   }
 }
@@ -88,7 +89,7 @@ resource "vault_kv_secret_v2" "mailu_app" {
 }
 
 resource "vault_kv_secret_v2" "mailu_ses_relay" {
-  count = local.manage_mailu_edge_secrets ? 1 : 0
+  count = local.manage_mailu_edge_runtime_secrets ? 1 : 0
 
   mount = "secret"
   name  = "mailu/${local.env.environment_name}/ses-relay"
@@ -100,7 +101,7 @@ resource "vault_kv_secret_v2" "mailu_ses_relay" {
 }
 
 resource "vault_kv_secret_v2" "mailu_aws_observability" {
-  count = local.manage_mailu_edge_secrets && var.enable_ses ? 1 : 0
+  count = local.manage_mailu_edge_secrets && local.effective_enable_ses ? 1 : 0
 
   mount = "secret"
   name  = "mailu/${local.env.environment_name}/aws-observability"
@@ -114,7 +115,7 @@ resource "vault_kv_secret_v2" "mailu_aws_observability" {
 }
 
 resource "vault_kv_secret_v2" "mailu_config" {
-  count = local.manage_mailu_edge_secrets ? 1 : 0
+  count = local.manage_mailu_edge_runtime_secrets ? 1 : 0
 
   mount = "secret"
   name  = "mailu/${local.env.environment_name}/config"

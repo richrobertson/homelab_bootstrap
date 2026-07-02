@@ -65,6 +65,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "mailu_wireguard_vault_path" {
+  description = "Vault KV path containing production Mailu WireGuard edge settings."
+  type        = string
+  default     = "secret/mailu/prod/wireguard"
+}
+
 variable "mail_edge_enabled" {
   description = "Whether to create the AWS Mailu edge and SES resources."
   type        = bool
@@ -276,6 +282,12 @@ variable "email_canary_alerts_vault_path" {
   description = "Vault KV path containing email canary alert settings. Expected key: phone_number."
   type        = string
   default     = "secret/mailu/prod/email-canary-alerts"
+}
+
+variable "email_canary_config_vault_path" {
+  description = "Vault KV path containing production email canary settings captured from the live Lambda."
+  type        = string
+  default     = "secret/mailu/prod/email-canary-config"
 }
 
 variable "email_canary_delivery_timeout_seconds" {

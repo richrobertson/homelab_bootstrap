@@ -1,13 +1,13 @@
 locals {
-  manage_authoritative_mail_dns = local.env.environment_name == "prod" && length(module.mail_edge) > 0 && var.manage_authoritative_mail_dns_records && var.mail_domain != null
-  manage_authoritative_ses_dns  = local.manage_authoritative_mail_dns && var.enable_ses && var.manage_authoritative_ses_dns_records
+  manage_authoritative_mail_dns = local.env.environment_name == "prod" && length(module.mail_edge) > 0 && var.manage_authoritative_mail_dns_records && local.effective_mail_domain != null
+  manage_authoritative_ses_dns  = local.manage_authoritative_mail_dns && local.effective_enable_ses && var.manage_authoritative_ses_dns_records
   manage_mail_dns01_cname       = local.manage_authoritative_mail_dns && var.manage_mail_certificate_dns01_cname && var.mail_certificate_dns01_delegate_zone != null
 
-  authoritative_mail_zone             = var.mail_domain == null ? null : "${var.mail_domain}."
-  authoritative_mail_hostname         = var.mail_domain == null ? null : coalesce(var.mail_hostname, "mail.${var.mail_domain}")
-  authoritative_mail_record_name      = local.authoritative_mail_hostname == null || local.authoritative_mail_hostname == var.mail_domain ? null : trimsuffix(local.authoritative_mail_hostname, ".${var.mail_domain}")
-  authoritative_mail_from_hostname    = var.mail_domain == null ? null : "${var.ses_mail_from_subdomain}.${var.mail_domain}"
-  authoritative_mail_from_record_name = local.authoritative_mail_from_hostname == null || local.authoritative_mail_from_hostname == var.mail_domain ? null : trimsuffix(local.authoritative_mail_from_hostname, ".${var.mail_domain}")
+  authoritative_mail_zone             = local.effective_mail_domain == null ? null : "${local.effective_mail_domain}."
+  authoritative_mail_hostname         = local.effective_mail_domain == null ? null : local.effective_mail_hostname
+  authoritative_mail_record_name      = local.authoritative_mail_hostname == null || local.authoritative_mail_hostname == local.effective_mail_domain ? null : trimsuffix(local.authoritative_mail_hostname, ".${local.effective_mail_domain}")
+  authoritative_mail_from_hostname    = local.effective_mail_domain == null ? null : "${var.ses_mail_from_subdomain}.${local.effective_mail_domain}"
+  authoritative_mail_from_record_name = local.authoritative_mail_from_hostname == null || local.authoritative_mail_from_hostname == local.effective_mail_domain ? null : trimsuffix(local.authoritative_mail_from_hostname, ".${local.effective_mail_domain}")
   authoritative_mail_autoconfig_records = local.manage_authoritative_mail_dns ? {
     autoconfig   = local.authoritative_mail_hostname
     autodiscover = local.authoritative_mail_hostname
@@ -16,7 +16,7 @@ locals {
   authoritative_ses_records = length(module.mail_edge) == 0 ? [] : module.mail_edge[0].ses_dns_records_to_create
   ses_verification_record = local.manage_authoritative_ses_dns ? one([
     for record in local.authoritative_ses_records : record
-    if record.type == "TXT" && record.name == "_amazonses.${var.mail_domain}"
+    if record.type == "TXT" && record.name == "_amazonses.${local.effective_mail_domain}"
   ]) : null
   ses_mail_from_mx_record = local.manage_authoritative_ses_dns ? one([
     for record in local.authoritative_ses_records : record
@@ -33,7 +33,7 @@ locals {
     "${split(" ", local.ses_mail_from_mx_record.records[0])[1]}."
   )
   ses_dkim_records = local.manage_authoritative_ses_dns ? {
-    for record in local.authoritative_ses_records : trimsuffix(record.name, ".${var.mail_domain}") => record
+    for record in local.authoritative_ses_records : trimsuffix(record.name, ".${local.effective_mail_domain}") => record
     if record.type == "CNAME"
   } : {}
 

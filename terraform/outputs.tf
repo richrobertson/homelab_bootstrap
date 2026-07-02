@@ -71,13 +71,13 @@ output "mail_edge_authoritative_dns_records" {
   value = !local.manage_authoritative_mail_dns ? [] : nonsensitive(compact(concat(
     [
       "A ${local.authoritative_mail_hostname} -> ${nonsensitive(module.mail_edge[0].elastic_ip)}",
-      "MX ${var.mail_domain} -> 10 ${local.authoritative_mail_hostname}.",
+      "MX ${local.effective_mail_domain} -> 10 ${local.authoritative_mail_hostname}.",
     ],
     local.ses_verification_record == null ? [] : [
-      "TXT _amazonses.${var.mail_domain}",
+      "TXT _amazonses.${local.effective_mail_domain}",
     ],
     [
-      for record_name, _record in local.ses_dkim_records : "CNAME ${record_name}.${var.mail_domain}"
+      for record_name, _record in local.ses_dkim_records : "CNAME ${record_name}.${local.effective_mail_domain}"
     ],
     local.ses_mail_from_mx_record == null ? [] : [
       "MX ${local.authoritative_mail_from_hostname}",
@@ -86,7 +86,7 @@ output "mail_edge_authoritative_dns_records" {
       "TXT ${local.authoritative_mail_from_hostname}",
     ],
     local.manage_mail_dns01_cname ? [
-      "CNAME ${local.mail_certificate_dns01_authoritative_name}.${var.mail_domain} -> ${local.mail_certificate_dns01_delegate_fqdn}",
+      "CNAME ${local.mail_certificate_dns01_authoritative_name}.${local.effective_mail_domain} -> ${local.mail_certificate_dns01_delegate_fqdn}",
     ] : [],
   )))
   sensitive = true
@@ -95,7 +95,7 @@ output "mail_edge_authoritative_dns_records" {
 output "mail_edge_certificate_dns01_cname" {
   description = "Delegated DNS-01 CNAME value for the public mail certificate."
   value = !local.manage_mail_dns01_cname ? null : {
-    source = "${local.mail_certificate_dns01_authoritative_name}.${var.mail_domain}."
+    source = "${local.mail_certificate_dns01_authoritative_name}.${local.effective_mail_domain}."
     target = local.mail_certificate_dns01_delegate_fqdn
   }
 }
@@ -144,7 +144,7 @@ output "mailu_vault_secret_paths" {
   description = "Vault paths seeded for the Mailu Kubernetes deployment."
   value = local.env.environment_name == "prod" ? {
     app       = local.manage_mailu_app_secret ? "secret/mailu/${local.env.environment_name}/app" : null
-    ses_relay = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/ses-relay" : null
-    config    = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/config" : null
+    ses_relay = local.manage_mailu_edge_runtime_secrets ? "secret/mailu/${local.env.environment_name}/ses-relay" : null
+    config    = local.manage_mailu_edge_runtime_secrets ? "secret/mailu/${local.env.environment_name}/config" : null
   } : {}
 }

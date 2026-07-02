@@ -32,8 +32,20 @@ data "vault_generic_secret" "volsync_s3_settings" {
   path = var.volsync_s3_settings_vault_path
 }
 
+data "vault_generic_secret" "mailu_wireguard" {
+  count = local.is_prod_environment ? 1 : 0
+
+  path = var.mailu_wireguard_vault_path
+}
+
+data "vault_generic_secret" "email_canary_config" {
+  count = local.is_prod_environment ? 1 : 0
+
+  path = var.email_canary_config_vault_path
+}
+
 data "vault_generic_secret" "email_canary_alerts" {
-  count = var.enable_email_canary ? 1 : 0
+  count = local.is_prod_environment || var.enable_email_canary ? 1 : 0
 
   path = var.email_canary_alerts_vault_path
 }
