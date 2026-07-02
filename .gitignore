@@ -5,3 +5,4 @@ terraform/s3.json
 **/.DS_Store
 .DS_Store
 cluster_configs
+terraform/mail_edge/lambda/*.zip
