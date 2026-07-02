@@ -14,6 +14,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 ses = boto3.client("ses", region_name=os.environ.get("SES_REGION"))
 sns = boto3.client("sns")
 secretsmanager = boto3.client("secretsmanager")
+cloudwatch = boto3.client("cloudwatch", region_name=os.environ.get("SES_REGION"))
 
 
 def lambda_handler(event, context):
@@ -25,6 +26,7 @@ def lambda_handler(event, context):
         token = uuid.uuid4().hex[:16]
         subject = f"[mail-canary:{probe['name']}] {token}"
         sent_at = datetime.now(timezone.utc).isoformat()
+        started_at = time.monotonic()
         try:
             send_canary(probe, subject, token, sent_at)
             sent.append({
@@ -32,6 +34,7 @@ def lambda_handler(event, context):
                 "subject": subject,
                 "token": token,
                 "sent_at": sent_at,
+                "started_at": started_at,
                 "deadline": time.monotonic() + int(probe["timeout_seconds"]),
             })
         except (BotoCoreError, ClientError, ValueError) as exc:
@@ -40,6 +43,7 @@ def lambda_handler(event, context):
 
     delivered, delivery_failures = wait_for_deliveries(sent)
     failures.extend(delivery_failures)
+    publish_probe_metrics(probes, sent, delivered, failures)
 
     print(json.dumps({"status": "complete", "delivered": delivered, "failures": failures}))
     if failures:
@@ -142,7 +146,11 @@ def wait_for_deliveries(sent_messages):
                 continue
 
             if delivered_at:
-                delivered.append({"probe": probe["name"], "delivered_at": delivered_at})
+                delivered.append({
+                    "probe": probe["name"],
+                    "delivered_at": delivered_at,
+                    "delivery_latency_seconds": max(0, time.monotonic() - message["started_at"]),
+                })
             else:
                 next_pending.append(message)
 
@@ -155,6 +163,54 @@ def wait_for_deliveries(sent_messages):
             time.sleep(sleep_seconds)
 
     return delivered, failures
+
+
+def publish_probe_metrics(probes, sent, delivered, failures):
+    sent_names = {message["probe"]["name"] for message in sent}
+    delivered_by_name = {message["probe"]: message for message in delivered}
+    failed_names = {failure["probe"] for failure in failures}
+    timestamp = datetime.now(timezone.utc)
+    metric_data = []
+
+    for probe in probes:
+        name = probe["name"]
+        dimensions = [{"Name": "Probe", "Value": name}]
+        metric_data.extend([
+            {
+                "MetricName": "SendAccepted",
+                "Dimensions": dimensions,
+                "Timestamp": timestamp,
+                "Value": 1 if name in sent_names else 0,
+                "Unit": "Count",
+            },
+            {
+                "MetricName": "Success",
+                "Dimensions": dimensions,
+                "Timestamp": timestamp,
+                "Value": 1 if name in delivered_by_name and name not in failed_names else 0,
+                "Unit": "Count",
+            },
+            {
+                "MetricName": "Failure",
+                "Dimensions": dimensions,
+                "Timestamp": timestamp,
+                "Value": 1 if name in failed_names else 0,
+                "Unit": "Count",
+            },
+        ])
+        if name in delivered_by_name:
+            metric_data.append({
+                "MetricName": "DeliveryLatencySeconds",
+                "Dimensions": dimensions,
+                "Timestamp": timestamp,
+                "Value": delivered_by_name[name]["delivery_latency_seconds"],
+                "Unit": "Seconds",
+            })
+
+    try:
+        cloudwatch.put_metric_data(Namespace="Mailu/EmailCanary", MetricData=metric_data)
+    except (BotoCoreError, ClientError) as exc:
+        print(json.dumps({"status": "metric-publish-failed", "error": str(exc)}))
 
 
 def load_imap_secret(secret_arn):

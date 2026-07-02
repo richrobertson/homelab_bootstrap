@@ -55,6 +55,18 @@ output "ses_smtp_password" {
   sensitive   = true
 }
 
+output "grafana_cloudwatch_access_key_id" {
+  description = "Read-only AWS access key ID used by the Grafana CloudWatch datasource."
+  value       = var.enable_ses ? aws_iam_access_key.grafana_cloudwatch[0].id : null
+  sensitive   = true
+}
+
+output "grafana_cloudwatch_secret_access_key" {
+  description = "Read-only AWS secret access key used by the Grafana CloudWatch datasource."
+  value       = var.enable_ses ? aws_iam_access_key.grafana_cloudwatch[0].secret : null
+  sensitive   = true
+}
+
 output "ses_dns_records_to_create" {
   description = "SES DNS records to create manually when Route53 automation is not enabled."
   value       = local.manage_ses_dns_records ? [] : local.ses_dns_records

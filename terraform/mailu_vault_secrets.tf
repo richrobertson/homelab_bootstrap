@@ -99,6 +99,20 @@ resource "vault_kv_secret_v2" "mailu_ses_relay" {
   })
 }
 
+resource "vault_kv_secret_v2" "mailu_aws_observability" {
+  count = local.manage_mailu_edge_secrets && var.enable_ses ? 1 : 0
+
+  mount = "secret"
+  name  = "mailu/${local.env.environment_name}/aws-observability"
+
+  data_json = jsonencode({
+    "AWS_ACCESS_KEY_ID"     = module.mail_edge[0].grafana_cloudwatch_access_key_id
+    "AWS_SECRET_ACCESS_KEY" = module.mail_edge[0].grafana_cloudwatch_secret_access_key
+    "AWS_REGION"            = local.aws_region
+    "AWS_DEFAULT_REGION"    = local.aws_region
+  })
+}
+
 resource "vault_kv_secret_v2" "mailu_config" {
   count = local.manage_mailu_edge_secrets ? 1 : 0
 
