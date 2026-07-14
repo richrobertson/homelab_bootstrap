@@ -1,6 +1,8 @@
 **/secrets.yaml
 **/.terraform*
+!terraform/.terraform.lock.hcl
 terraform/s3.json
+terraform/mail_edge/lambda/*.zip
 **/terraform.tfstate
 **/.DS_Store
 .DS_Store
