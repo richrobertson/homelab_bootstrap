@@ -1,5 +1,6 @@
 **/secrets.yaml
 **/.terraform*
+!terraform/.terraform.lock.hcl
 terraform/s3.json
 **/terraform.tfstate
 **/.DS_Store
