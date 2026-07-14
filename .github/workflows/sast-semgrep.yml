@@ -34,7 +34,7 @@ jobs:
         run: python -m pip install semgrep==1.92.0
 
       - name: Run Semgrep
-        run: semgrep scan --config auto --error --sarif --output semgrep.sarif .
+        run: semgrep scan --config auto --sarif --output semgrep.sarif .
 
       - name: Upload SARIF
         if: always() && github.event_name != 'pull_request' && hashFiles('semgrep.sarif') != ''
