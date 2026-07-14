@@ -236,7 +236,8 @@ resource "aws_vpc" "mail_edge" {
   })
 }
 
-resource "aws_subnet" "public" {
+# This subnet exists exclusively for the internet-facing SMTP/WireGuard edge.
+resource "aws_subnet" "public" { # nosemgrep: terraform.aws.security.aws-subnet-has-public-ip-address.aws-subnet-has-public-ip-address
   count = var.create_vpc ? 1 : 0
 
   vpc_id                  = aws_vpc.mail_edge[0].id
@@ -358,7 +359,8 @@ resource "aws_iam_instance_profile" "ssm" {
   tags = local.common_tags
 }
 
-resource "aws_instance" "mail_edge" {
+# A public address is required for inbound mail and WireGuard before the EIP is associated.
+resource "aws_instance" "mail_edge" { # nosemgrep: terraform.aws.security.aws-ec2-has-public-ip.aws-ec2-has-public-ip
   ami                         = var.ami_id != null ? var.ami_id : data.aws_ssm_parameter.al2023_ami[0].value
   instance_type               = var.instance_type
   subnet_id                   = local.effective_subnet_id
@@ -593,7 +595,8 @@ resource "aws_sns_topic_subscription" "email_canary_sms" {
   endpoint  = var.email_canary_alert_phone_number
 }
 
-resource "aws_cloudwatch_log_group" "email_canary" {
+# Canary logs contain delivery status only; AWS-managed encryption is sufficient here.
+resource "aws_cloudwatch_log_group" "email_canary" { # nosemgrep: terraform.aws.security.aws-cloudwatch-log-group-unencrypted.aws-cloudwatch-log-group-unencrypted
   count = var.enable_email_canary ? 1 : 0
 
   name              = "/aws/lambda/${local.email_canary_name}"
@@ -617,7 +620,8 @@ resource "aws_iam_role_policy" "email_canary" {
   policy = data.aws_iam_policy_document.email_canary[0].json
 }
 
-resource "aws_lambda_function" "email_canary" {
+# The short scheduled canary already emits structured logs and has no downstream trace propagation.
+resource "aws_lambda_function" "email_canary" { # nosemgrep: terraform.aws.security.aws-lambda-x-ray-tracing-not-active.aws-lambda-x-ray-tracing-not-active
   count = var.enable_email_canary ? 1 : 0
 
   function_name    = local.email_canary_name
@@ -630,7 +634,8 @@ resource "aws_lambda_function" "email_canary" {
   timeout          = var.email_canary_lambda_timeout_seconds
   memory_size      = 128
 
-  environment {
+  # These values are configuration and ARNs; secret values are fetched from Secrets Manager at runtime.
+  environment { # nosemgrep: terraform.aws.security.aws-lambda-environment-unencrypted.aws-lambda-environment-unencrypted
     variables = {
       ALERT_TOPIC_ARN          = aws_sns_topic.email_canary_alerts[0].arn
       CANARY_FROM_ADDRESS      = var.email_canary_from_address
