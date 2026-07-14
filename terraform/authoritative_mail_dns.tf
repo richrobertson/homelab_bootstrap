@@ -84,8 +84,8 @@ resource "dns_txt_record_set" "ses_verification" {
 
   zone = local.authoritative_mail_zone
   name = "_amazonses"
-  ttl  = local.ses_verification_record.ttl
-  txt = [
+  ttl  = local.ses_verification_record == null ? 300 : local.ses_verification_record.ttl
+  txt = local.ses_verification_record == null ? [] : [
     for value in local.ses_verification_record.records : trimsuffix(trimprefix(value, "\""), "\"")
   ]
 }
@@ -104,11 +104,11 @@ resource "dns_mx_record_set" "ses_mail_from" {
 
   zone = local.authoritative_mail_zone
   name = local.authoritative_mail_from_record_name
-  ttl  = local.ses_mail_from_mx_record.ttl
+  ttl  = local.ses_mail_from_mx_record == null ? 300 : local.ses_mail_from_mx_record.ttl
 
   mx {
-    preference = local.ses_mail_from_mx_preference
-    exchange   = local.ses_mail_from_mx_exchange
+    preference = local.ses_mail_from_mx_preference == null ? 0 : local.ses_mail_from_mx_preference
+    exchange   = local.ses_mail_from_mx_exchange == null ? "invalid." : local.ses_mail_from_mx_exchange
   }
 }
 
@@ -117,8 +117,8 @@ resource "dns_txt_record_set" "ses_mail_from" {
 
   zone = local.authoritative_mail_zone
   name = local.authoritative_mail_from_record_name
-  ttl  = local.ses_mail_from_txt_record.ttl
-  txt = [
+  ttl  = local.ses_mail_from_txt_record == null ? 300 : local.ses_mail_from_txt_record.ttl
+  txt = local.ses_mail_from_txt_record == null ? [] : [
     for value in local.ses_mail_from_txt_record.records : trimsuffix(trimprefix(value, "\""), "\"")
   ]
 }
@@ -127,7 +127,7 @@ resource "dns_cname_record" "mail_certificate_dns01_delegate" {
   count = local.manage_mail_dns01_cname ? 1 : 0
 
   zone  = local.authoritative_mail_zone
-  name  = local.mail_certificate_dns01_authoritative_name
+  name  = local.mail_certificate_dns01_authoritative_name == null ? "_acme-challenge" : local.mail_certificate_dns01_authoritative_name
   ttl   = 300
-  cname = local.mail_certificate_dns01_delegate_fqdn
+  cname = local.mail_certificate_dns01_delegate_fqdn == null ? "invalid." : local.mail_certificate_dns01_delegate_fqdn
 }
