@@ -14,7 +14,7 @@ Example:
 
 ```hcl
 gpu_worker_fault_domains = ["fd-0"]
-gpu_talos_installer_image = "factory.talos.dev/metal-installer/<schematic-id>:v1.12.6"
+gpu_talos_installer_image = "factory.talos.dev/metal-installer/<schematic-id>:v1.12.10"
 ```
 
 Talos system extensions are not applied by listing extension names in machine

@@ -36,7 +36,7 @@ locals {
         }
       }
       gpu_worker_fault_domains  = ["fd-0", "fd-1", "fd-2"]
-      gpu_talos_installer_image = "factory.talos.dev/installer/bf2113e1bea48d566f7d1e08eb780f832ccb56bbd7cf2f95769f7a04f9f2b184:v1.12.6"
+      gpu_talos_installer_image = "factory.talos.dev/installer/bf2113e1bea48d566f7d1e08eb780f832ccb56bbd7cf2f95769f7a04f9f2b184:v1.12.10"
       # Vault PKI policy - production matches current live cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int_prod", capabilities = ["read", "list"] },
