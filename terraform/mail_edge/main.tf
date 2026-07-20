@@ -62,16 +62,8 @@ locals {
   ] : []
   email_canary_probes           = var.enable_email_canary ? concat([local.email_canary_primary_probe], local.email_canary_mailu_dovecot_probes) : []
   email_canary_imap_secret_arns = compact([for probe in local.email_canary_probes : probe.imap_secret_arn])
-  open_relay_probe = var.enable_open_relay_canary ? {
-    host            = local.effective_mail_hostname
-    port            = var.open_relay_canary_port
-    timeout_seconds = var.open_relay_canary_timeout_seconds
-    mail_from       = var.open_relay_canary_mail_from
-    rcpt_to         = var.open_relay_canary_rcpt_to
-  } : null
-
-  vpc_cidr           = "10.250.80.0/24"
-  public_subnet_cidr = "10.250.80.0/26"
+  vpc_cidr                      = "10.250.80.0/24"
+  public_subnet_cidr            = "10.250.80.0/26"
 
   effective_vpc_id    = var.create_vpc ? aws_vpc.mail_edge[0].id : coalesce(var.vpc_id, data.aws_subnet.existing[0].vpc_id)
   effective_subnet_id = var.create_vpc ? aws_subnet.public[0].id : var.subnet_id
@@ -577,6 +569,51 @@ resource "aws_cloudwatch_log_metric_filter" "backend_unavailable" {
   }
 }
 
+resource "aws_cloudwatch_log_metric_filter" "relay_canary_critical" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  name           = "${local.instance_name}-relay-canary-critical"
+  log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+  pattern        = "{ $.event = \"relay_canary\" && $.status = \"critical\" }"
+
+  metric_transformation {
+    name      = "RelayCanaryCritical"
+    namespace = local.mail_edge_metric_namespace
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "relay_canary_indeterminate" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  name           = "${local.instance_name}-relay-canary-indeterminate"
+  log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+  pattern        = "{ $.event = \"relay_canary\" && $.status = \"indeterminate\" }"
+
+  metric_transformation {
+    name      = "RelayCanaryIndeterminate"
+    namespace = local.mail_edge_metric_namespace
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "relay_canary_heartbeat" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  name           = "${local.instance_name}-relay-canary-heartbeat"
+  log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+  pattern        = "{ $.event = \"relay_canary\" && $.heartbeat = 1 }"
+
+  metric_transformation {
+    name      = "RelayCanaryHeartbeat"
+    namespace = local.mail_edge_metric_namespace
+    value     = "1"
+    unit      = "Count"
+  }
+}
+
 resource "aws_cloudwatch_metric_alarm" "smtp_connection_surge" {
   count = var.enable_cloudwatch_observability ? 1 : 0
 
@@ -608,6 +645,61 @@ resource "aws_cloudwatch_metric_alarm" "backend_unavailable" {
   statistic           = "Sum"
   threshold           = 1
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "relay_canary_critical" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-relay-canary-critical"
+  alarm_description   = "The AWS mail edge received a 2xx RCPT response for a non-local recipient through the WireGuard Mailu backend path. Treat this as an active relay-policy regression. The probe never sends DATA."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.relay_canary_critical[0].metric_transformation[0].name
+  namespace           = local.mail_edge_metric_namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "relay_canary_indeterminate" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-relay-canary-indeterminate"
+  alarm_description   = "The AWS mail-edge RCPT-only probe could not conclusively verify Postfix relay rejection because of a transport, protocol, or temporary SMTP failure."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.relay_canary_indeterminate[0].metric_transformation[0].name
+  namespace           = local.mail_edge_metric_namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "relay_canary_heartbeat_missing" {
+  count = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-relay-canary-heartbeat-missing"
+  alarm_description   = "No AWS mail-edge relay-canary result reached CloudWatch for three consecutive five-minute periods. Check the systemd timer, probe service, and CloudWatch Agent."
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 3
+  datapoints_to_alarm = 3
+  metric_name         = aws_cloudwatch_log_metric_filter.relay_canary_heartbeat[0].metric_transformation[0].name
+  namespace           = local.mail_edge_metric_namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "breaching"
   alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
   ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
   tags                = local.common_tags
@@ -646,9 +738,16 @@ resource "aws_ssm_association" "mail_edge_observability" {
 
   parameters = {
     commands = templatefile("${path.module}/templates/configure_observability.sh.tftpl", {
-      aws_region          = var.aws_region
-      haproxy_log_group   = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
-      local_log_max_bytes = var.mail_edge_local_log_max_bytes
+      aws_region                   = var.aws_region
+      haproxy_log_group            = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+      local_log_max_bytes          = var.mail_edge_local_log_max_bytes
+      relay_canary_enabled         = var.enable_open_relay_canary
+      relay_canary_host            = local.effective_home_mailu_tunnel_ip
+      relay_canary_mail_from       = var.open_relay_canary_mail_from
+      relay_canary_port            = var.open_relay_canary_port
+      relay_canary_rcpt_to         = var.open_relay_canary_rcpt_to
+      relay_canary_script_b64      = base64encode(file("${path.module}/scripts/mail_edge_relay_canary.py"))
+      relay_canary_timeout_seconds = var.open_relay_canary_timeout_seconds
     })
   }
 
@@ -1020,7 +1119,6 @@ resource "aws_lambda_function" "email_canary" { # nosemgrep: terraform.aws.secur
       DELIVERY_TIMEOUT_SECONDS = tostring(var.email_canary_delivery_timeout_seconds)
       IMAP_SECRET_ARN          = var.email_canary_imap_secret_arn
       MAIL_DOMAIN              = var.mail_domain
-      OPEN_RELAY_PROBE_JSON    = var.enable_open_relay_canary ? jsonencode(local.open_relay_probe) : ""
       PROBES_JSON              = jsonencode(local.email_canary_probes)
       SES_REGION               = var.aws_region
     }

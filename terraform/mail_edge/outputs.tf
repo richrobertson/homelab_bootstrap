@@ -131,10 +131,21 @@ output "email_canary_schedule_expression" {
 
 output "email_canary_probe_names" {
   description = "Names of the email canary probes configured for the Lambda."
-  value = concat(
-    var.enable_open_relay_canary ? ["open-relay"] : [],
-    [for probe in local.email_canary_probes : probe.name],
-  )
+  value       = [for probe in local.email_canary_probes : probe.name]
+}
+
+output "open_relay_canary_alarm_names" {
+  description = "CloudWatch alarms for critical, indeterminate, and missing-heartbeat relay canary results."
+  value = var.enable_cloudwatch_observability && var.enable_open_relay_canary ? [
+    aws_cloudwatch_metric_alarm.relay_canary_critical[0].alarm_name,
+    aws_cloudwatch_metric_alarm.relay_canary_indeterminate[0].alarm_name,
+    aws_cloudwatch_metric_alarm.relay_canary_heartbeat_missing[0].alarm_name,
+  ] : []
+}
+
+output "open_relay_canary_target" {
+  description = "WireGuard-side Mailu SMTP endpoint exercised by the edge-host relay canary."
+  value       = var.enable_open_relay_canary ? "${local.effective_home_mailu_tunnel_ip}:25" : null
 }
 
 output "haproxy_log_group_name" {

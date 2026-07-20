@@ -151,7 +151,7 @@ variable "wireguard_listen_port" {
 }
 
 variable "home_mailu_tunnel_ip" {
-  description = "Home-side Mailu front-end IP reachable across the WireGuard tunnel. Defaults to the second usable IP in wireguard_tunnel_cidr when unset."
+  description = "Home-side Mailu ClusterIP reachable across WireGuard. Production must use the ClusterIP path that Kubernetes SNATs into the aws_edge_inbound_only Postfix restriction class, not the LAN MetalLB VIP. Defaults to the second usable IP in wireguard_tunnel_cidr when unset."
   type        = string
   default     = null
 }
@@ -346,26 +346,36 @@ variable "email_canary_delivery_timeout_seconds" {
 }
 
 variable "enable_open_relay_canary" {
-  description = "Whether the scheduled AWS Lambda email canary should run a safe external RCPT-only open-relay check against the public MX path."
+  description = "Whether the mail-edge EC2 systemd timer should run a safe RCPT-only relay-policy probe against the WireGuard Mailu backend."
   type        = bool
   default     = false
 
   validation {
-    condition     = !var.enable_open_relay_canary || var.enable_email_canary
-    error_message = "enable_open_relay_canary requires enable_email_canary."
+    condition     = !var.enable_open_relay_canary || (var.enable_mail_edge_cloudwatch_observability && var.enable_ssm_session_manager)
+    error_message = "enable_open_relay_canary requires enable_mail_edge_cloudwatch_observability and enable_ssm_session_manager."
   }
 }
 
 variable "open_relay_canary_port" {
-  description = "Public SMTP port for the RCPT-only open-relay check. Port 25 exercises the unauthenticated MX path."
+  description = "SMTP port for the RCPT-only relay-policy check. This must remain 25 to exercise the unauthenticated AWS-edge ingress policy."
   type        = number
   default     = 25
+
+  validation {
+    condition     = var.open_relay_canary_port == 25
+    error_message = "open_relay_canary_port must be 25."
+  }
 }
 
 variable "open_relay_canary_timeout_seconds" {
   description = "Socket timeout for each SMTP step in the RCPT-only open-relay check."
   type        = number
   default     = 10
+
+  validation {
+    condition     = var.open_relay_canary_timeout_seconds >= 1 && var.open_relay_canary_timeout_seconds <= 30
+    error_message = "open_relay_canary_timeout_seconds must be between 1 and 30 seconds."
+  }
 }
 
 variable "enable_mailu_dovecot_canary" {
