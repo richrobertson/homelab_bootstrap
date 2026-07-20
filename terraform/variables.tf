@@ -315,6 +315,29 @@ variable "email_canary_delivery_timeout_seconds" {
   default     = 240
 }
 
+variable "enable_open_relay_canary" {
+  description = "Whether the scheduled AWS Lambda email canary should run a safe external RCPT-only open-relay check against the public MX path."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_open_relay_canary || var.enable_email_canary
+    error_message = "enable_open_relay_canary requires enable_email_canary."
+  }
+}
+
+variable "open_relay_canary_port" {
+  description = "Public SMTP port for the RCPT-only open-relay check. Port 25 exercises the unauthenticated MX path."
+  type        = number
+  default     = 25
+}
+
+variable "open_relay_canary_timeout_seconds" {
+  description = "Socket timeout for each SMTP step in the RCPT-only open-relay check."
+  type        = number
+  default     = 10
+}
+
 variable "enable_mailu_dovecot_canary" {
   description = "Whether the AWS Lambda email canary should also verify delivery into a Mailu-hosted mailbox through Dovecot IMAP."
   type        = bool

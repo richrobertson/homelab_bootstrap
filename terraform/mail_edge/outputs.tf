@@ -65,6 +65,11 @@ output "mail_dns_records_to_create" {
   value       = local.manage_public_mail_dns_records ? [] : local.mail_dns_records
 }
 
+output "recommended_public_mail_security_dns_records" {
+  description = "Public DNS security records whose values are unambiguous from this module's SES-only outbound design. Review and publish manually."
+  value       = local.recommended_public_mail_security_dns_records
+}
+
 output "reverse_dns_name" {
   description = "Hostname intended for Elastic IP reverse DNS."
   value       = local.effective_mail_hostname
@@ -92,7 +97,10 @@ output "email_canary_schedule_expression" {
 
 output "email_canary_probe_names" {
   description = "Names of the email canary probes configured for the Lambda."
-  value       = [for probe in local.email_canary_probes : probe.name]
+  value = concat(
+    var.enable_open_relay_canary ? ["open-relay"] : [],
+    [for probe in local.email_canary_probes : probe.name],
+  )
 }
 
 output "haproxy_log_group_name" {

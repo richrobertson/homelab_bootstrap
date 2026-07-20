@@ -66,6 +66,11 @@ output "mail_edge_dns_records_to_create" {
   value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].mail_dns_records_to_create)
 }
 
+output "mail_edge_recommended_public_security_dns_records" {
+  description = "Reviewed public mail-security DNS records to publish manually in Cloudflare; this Terraform root does not manage the public zone."
+  value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].recommended_public_mail_security_dns_records)
+}
+
 output "mail_edge_authoritative_dns_records" {
   description = "Split-horizon/internal myrobertson.net DNS records managed directly through the AD-backed DNS provider for inbound mail, SES, and delegated ACME when enabled."
   value = !local.manage_authoritative_mail_dns ? [] : nonsensitive(compact(concat(

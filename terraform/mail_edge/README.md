@@ -17,6 +17,8 @@ home-hosted Mailu deployment.
 - Optionally create a Lambda email canary that runs every five minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
   when sending or delivery is delayed or rejected.
+- Optionally extend that Lambda with a public-MX open-relay canary that stops
+  after `RCPT TO`, always resets the transaction, and never sends `DATA`.
 - Optionally create Route53 records and Elastic IP reverse DNS.
 
 ## Destroy Guardrails
@@ -41,6 +43,9 @@ EventBridge -> Lambda -> SES -> external recipient mailbox -> IMAP check -> SNS/
 
 Mailu Dovecot canary:
 EventBridge -> Lambda -> SES -> public MX -> AWS edge -> WireGuard -> Mailu -> Dovecot IMAP -> SNS/SMS alert
+
+Open-relay canary:
+EventBridge -> Lambda -> public MX:25 -> EHLO/MAIL FROM/RCPT TO -> RSET/QUIT -> SNS/SMS alert
 ```
 
 ## Email Canary
@@ -100,6 +105,18 @@ HAProxy connection records are JSON and include `source_ip`, `source_port`,
 `frontend`, `backend`, duration, byte count, and termination state. They retain
 the public address at the AWS edge even when WireGuard or Kubernetes later
 SNATs the connection.
+
+## Open-Relay Canary
+
+To check the unauthenticated public MX path for relaying, set
+`enable_open_relay_canary = true`. The check uses reserved `example.com` and
+`example.net` addresses, treats only a permanent 5xx response to `RCPT TO` as
+healthy, and sends `RSET` then `QUIT` without ever entering `DATA`. Keep the
+default port at 25; testing submission port 587 would not cover an MX relay
+regression. Confirm that the Lambda account/region is permitted to make public
+port-25 connections before enabling it, because AWS commonly throttles that
+traffic. A timeout or 4xx response alerts as inconclusive rather than claiming
+the relay is closed.
 
 ## Root Integration
 

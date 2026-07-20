@@ -44,6 +44,9 @@ module "mail_edge" {
   email_canary_imap_secret_arn                  = var.email_canary_imap_secret_arn
   email_canary_alert_phone_number               = coalesce(var.email_canary_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null))
   email_canary_delivery_timeout_seconds         = var.email_canary_delivery_timeout_seconds
+  enable_open_relay_canary                      = var.enable_open_relay_canary
+  open_relay_canary_port                        = var.open_relay_canary_port
+  open_relay_canary_timeout_seconds             = var.open_relay_canary_timeout_seconds
   enable_mailu_dovecot_canary                   = var.enable_mailu_dovecot_canary
   mailu_dovecot_canary_from_address             = var.mailu_dovecot_canary_from_address
   mailu_dovecot_canary_to_address               = var.mailu_dovecot_canary_to_address

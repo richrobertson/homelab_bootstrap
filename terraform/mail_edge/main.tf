@@ -59,6 +59,13 @@ locals {
   ] : []
   email_canary_probes           = var.enable_email_canary ? concat([local.email_canary_primary_probe], local.email_canary_mailu_dovecot_probes) : []
   email_canary_imap_secret_arns = compact([for probe in local.email_canary_probes : probe.imap_secret_arn])
+  open_relay_probe = var.enable_open_relay_canary ? {
+    host            = local.effective_mail_hostname
+    port            = var.open_relay_canary_port
+    timeout_seconds = var.open_relay_canary_timeout_seconds
+    mail_from       = var.open_relay_canary_mail_from
+    rcpt_to         = var.open_relay_canary_rcpt_to
+  } : null
 
   vpc_cidr           = "10.250.80.0/24"
   public_subnet_cidr = "10.250.80.0/26"
@@ -123,6 +130,17 @@ locals {
       type    = "MX"
       ttl     = 300
       records = ["10 ${local.effective_mail_hostname}."]
+    }
+  ]
+
+  # Expose the unambiguous SES-only apex SPF policy for deliberate publication
+  # when public DNS is managed outside this module.
+  recommended_public_mail_security_dns_records = [
+    {
+      name    = var.mail_domain
+      type    = "TXT"
+      ttl     = 300
+      records = ["v=spf1 include:amazonses.com -all"]
     }
   ]
 }
@@ -812,6 +830,7 @@ resource "aws_lambda_function" "email_canary" { # nosemgrep: terraform.aws.secur
       DELIVERY_TIMEOUT_SECONDS = tostring(var.email_canary_delivery_timeout_seconds)
       IMAP_SECRET_ARN          = var.email_canary_imap_secret_arn
       MAIL_DOMAIN              = var.mail_domain
+      OPEN_RELAY_PROBE_JSON    = var.enable_open_relay_canary ? jsonencode(local.open_relay_probe) : ""
       PROBES_JSON              = jsonencode(local.email_canary_probes)
       SES_REGION               = var.aws_region
     }

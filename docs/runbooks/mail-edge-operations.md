@@ -24,6 +24,11 @@ To verify delivery into Kubernetes-hosted Mailu Dovecot folders, set
 `mailu_dovecot_canary_to_address` and
 `mailu_dovecot_canary_imap_secret_arn`.
 
+To detect a recurrence of unauthenticated SMTP relaying, set
+`enable_open_relay_canary = true` after confirming the Lambda can reach the
+public MX on port 25. The canary is deliberately RCPT-only and never sends a
+message body.
+
 Generate the EC2 WireGuard keypair before applying. Terraform expects both
 halves explicitly so it can bootstrap the instance and render the home peer
 config without depending on a local shell helper.
@@ -146,11 +151,17 @@ Use these outputs when public DNS is not fully managed by Terraform:
 - `mail_edge_ses_dns_records_to_create`
 - `mail_edge_dns_records_to_create`
 - `mail_edge_certificate_dns01_cname`
+- `mail_edge_recommended_public_security_dns_records`
 
 For the public internet-facing zone, point the Cloudflare `A` record for
 `mail_hostname` to `mail_edge_elastic_ip`, point the `MX` record for
 `mail_domain` to `mail_hostname`, and point `autoconfig.<mail_domain>` plus
 `autodiscover.<mail_domain>` at `mail_hostname`.
+
+The security output currently contains only the apex SPF record because this
+deployment's outbound path is unambiguously SES-only. DMARC and TLS-RPT require
+real report destinations; MTA-STS additionally requires an HTTPS policy host
+with a valid certificate. Do not publish placeholder destinations.
 
 ## Operational Notes
 

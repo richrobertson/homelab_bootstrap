@@ -313,6 +313,51 @@ variable "email_canary_log_retention_days" {
   default     = 14
 }
 
+variable "enable_open_relay_canary" {
+  description = "Whether the scheduled email canary should perform an external RCPT-only open-relay check against the public MX path. Requires enable_email_canary."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_open_relay_canary || var.enable_email_canary
+    error_message = "enable_open_relay_canary requires enable_email_canary so the scheduled Lambda and SNS alert path exist."
+  }
+}
+
+variable "open_relay_canary_port" {
+  description = "Public SMTP port for the RCPT-only open-relay check. Keep this at 25 to exercise the unauthenticated MX path."
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.open_relay_canary_port >= 1 && var.open_relay_canary_port <= 65535
+    error_message = "open_relay_canary_port must be a valid TCP port."
+  }
+}
+
+variable "open_relay_canary_timeout_seconds" {
+  description = "Socket timeout for each SMTP step in the RCPT-only open-relay check."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.open_relay_canary_timeout_seconds >= 1 && var.open_relay_canary_timeout_seconds <= 30
+    error_message = "open_relay_canary_timeout_seconds must be between 1 and 30 seconds."
+  }
+}
+
+variable "open_relay_canary_mail_from" {
+  description = "Non-local RFC 2606 sender used by the RCPT-only open-relay check. No message body is transmitted."
+  type        = string
+  default     = "open-relay-canary@example.com"
+}
+
+variable "open_relay_canary_rcpt_to" {
+  description = "Non-local RFC 2606 recipient used by the RCPT-only open-relay check. The transaction always stops before DATA."
+  type        = string
+  default     = "open-relay-canary@example.net"
+}
+
 variable "enable_mailu_dovecot_canary" {
   description = "Whether the email canary should also verify delivery into a Mailu-hosted mailbox through Dovecot IMAP."
   type        = bool
