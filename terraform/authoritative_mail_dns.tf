@@ -14,10 +14,10 @@ locals {
   } : {}
 
   authoritative_ses_records = length(module.mail_edge) == 0 ? [] : module.mail_edge[0].ses_dns_records_to_create
-  ses_verification_record = local.manage_authoritative_ses_dns ? one([
+  ses_verification_record = local.manage_authoritative_ses_dns ? try(one([
     for record in local.authoritative_ses_records : record
     if record.type == "TXT" && record.name == "_amazonses.${var.mail_domain}"
-  ]) : null
+  ]), null) : null
   ses_mail_from_mx_record = local.manage_authoritative_ses_dns ? one([
     for record in local.authoritative_ses_records : record
     if record.type == "MX" && record.name == local.authoritative_mail_from_hostname

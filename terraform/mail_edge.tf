@@ -33,6 +33,11 @@ module "mail_edge" {
   mail_hostname                                 = var.mail_hostname
   route53_zone_id                               = var.route53_zone_id
   enable_ses                                    = var.enable_ses
+  enable_ses_monitoring                         = var.enable_ses_monitoring
+  ses_alarm_period_seconds                      = var.ses_alarm_period_seconds
+  ses_send_volume_threshold                     = var.ses_send_volume_threshold
+  ses_bounce_rate_threshold                     = var.ses_bounce_rate_threshold
+  ses_complaint_rate_threshold                  = var.ses_complaint_rate_threshold
   manage_ses_route53_records                    = var.manage_ses_route53_records
   manage_public_mail_dns_records                = var.manage_public_mail_dns_records
   wait_for_ses_domain_verification              = var.wait_for_ses_domain_verification
@@ -52,4 +57,11 @@ module "mail_edge" {
   mailu_dovecot_canary_to_address               = var.mailu_dovecot_canary_to_address
   mailu_dovecot_canary_imap_secret_arn          = var.mailu_dovecot_canary_imap_secret_arn
   mailu_dovecot_canary_delivery_timeout_seconds = var.mailu_dovecot_canary_delivery_timeout_seconds
+}
+
+import {
+  for_each = var.mail_edge_enabled && var.enable_ses ? toset([var.mail_domain]) : toset([])
+
+  to = module.mail_edge[0].aws_sesv2_email_identity.mail[each.key]
+  id = each.key
 }

@@ -55,6 +55,31 @@ output "mail_edge_ses_smtp_password" {
   sensitive   = true
 }
 
+output "mail_edge_ses_configuration_set_name" {
+  description = "SES configuration set for Mailu event publishing."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_configuration_set_name)
+}
+
+output "mail_edge_ses_configuration_set_header" {
+  description = "Optional SMTP header that explicitly selects the default Mailu SES configuration set."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_configuration_set_header)
+}
+
+output "mail_edge_ses_event_topic_arn" {
+  description = "SNS topic ARN receiving SES failure events."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_event_topic_arn)
+}
+
+output "mail_edge_ses_alert_topic_arn" {
+  description = "SNS topic ARN receiving SES CloudWatch alarm notifications."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_alert_topic_arn)
+}
+
+output "mail_edge_ses_alarm_names" {
+  description = "CloudWatch alarms monitoring SES outbound volume and account reputation."
+  value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].ses_alarm_names)
+}
+
 output "mail_edge_ses_dns_records_to_create" {
   description = "SES DNS records to create manually when Route53 automation is not enabled."
   value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].ses_dns_records_to_create)

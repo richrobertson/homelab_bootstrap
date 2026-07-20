@@ -212,6 +212,56 @@ variable "enable_ses" {
   default     = true
 }
 
+variable "enable_ses_monitoring" {
+  description = "Whether to create SES event publishing destinations plus account-level CloudWatch volume and reputation alarms."
+  type        = bool
+  default     = true
+}
+
+variable "ses_alarm_period_seconds" {
+  description = "CloudWatch evaluation period for SES volume and reputation alarms."
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.ses_alarm_period_seconds >= 60
+    error_message = "ses_alarm_period_seconds must be at least 60 seconds."
+  }
+}
+
+variable "ses_send_volume_threshold" {
+  description = "Recipient sends accepted by SES during one alarm period that trigger an outbound-volume alarm."
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.ses_send_volume_threshold > 0
+    error_message = "ses_send_volume_threshold must be greater than zero."
+  }
+}
+
+variable "ses_bounce_rate_threshold" {
+  description = "SES account reputation bounce-rate threshold. The default alerts below AWS's 5% review threshold."
+  type        = number
+  default     = 0.04
+
+  validation {
+    condition     = var.ses_bounce_rate_threshold > 0 && var.ses_bounce_rate_threshold <= 1
+    error_message = "ses_bounce_rate_threshold must be greater than zero and no greater than one."
+  }
+}
+
+variable "ses_complaint_rate_threshold" {
+  description = "SES account reputation complaint-rate threshold. The default alerts below AWS's 0.1% review threshold."
+  type        = number
+  default     = 0.0008
+
+  validation {
+    condition     = var.ses_complaint_rate_threshold > 0 && var.ses_complaint_rate_threshold <= 1
+    error_message = "ses_complaint_rate_threshold must be greater than zero and no greater than one."
+  }
+}
+
 variable "manage_ses_route53_records" {
   description = "Whether to create SES Route53 records when route53_zone_id is provided."
   type        = bool

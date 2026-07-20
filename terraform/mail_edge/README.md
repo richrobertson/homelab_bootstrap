@@ -14,6 +14,8 @@ home-hosted Mailu deployment.
   a retention-managed CloudWatch Logs group, and alarm on SMTP connection
   surges, unavailable backends, and EC2 status-check failures.
 - Create SES identity, DKIM, custom MAIL FROM, and SMTP credentials.
+- Create SES event publishing, failure-event SNS delivery, and CloudWatch
+  alarms for account send volume, bounce reputation, and complaint reputation.
 - Optionally create a Lambda email canary that runs every five minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
   when sending or delivery is delayed or rejected.
@@ -47,6 +49,37 @@ EventBridge -> Lambda -> SES -> public MX -> AWS edge -> WireGuard -> Mailu -> D
 Open-relay canary:
 EventBridge -> Lambda -> public MX:25 -> EHLO/MAIL FROM/RCPT TO -> RSET/QUIT -> SNS/SMS alert
 ```
+
+## SES Monitoring
+
+SES monitoring is enabled by default when SES is enabled. It creates:
+
+- A configuration set with CloudWatch destinations for send, delivery, bounce,
+  complaint, reject, and rendering-failure events.
+- An SNS destination for bounce, complaint, reject, and rendering-failure
+  events. No subscription is created automatically so an operator can attach a
+  queue, Lambda, HTTPS endpoint, or other consumer without sending one SMS per
+  event.
+- Account-level CloudWatch alarms for a five-minute recipient-send surge, bounce
+  reputation, and complaint reputation. These alarms work independently of the
+  configuration set and publish to a separate alert topic. The existing canary
+  SMS phone number is subscribed when configured.
+
+The configuration set does not enable Virtual Deliverability Manager or
+configuration-set reputation export. Fine-grained CloudWatch event metrics can
+still incur normal CloudWatch custom-metric charges.
+
+Terraform associates the configuration set as the SES identity default, so
+Mailu SMTP traffic uses the event destinations without requiring a custom
+header. The `ses_configuration_set_header` output remains available for an
+explicit sender override. After apply, verify new messages appear with the
+`ses:configuration-set` CloudWatch dimension. The account-level alarms remain
+independent of configuration-set event publishing.
+
+Thresholds are configurable through `ses_send_volume_threshold`,
+`ses_bounce_rate_threshold`, and `ses_complaint_rate_threshold`. The reputation
+defaults are 4% bounce and 0.08% complaint, below AWS review levels of 5% and
+0.1% respectively.
 
 ## Email Canary
 

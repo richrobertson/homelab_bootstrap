@@ -211,6 +211,36 @@ variable "enable_ses" {
   default     = true
 }
 
+variable "enable_ses_monitoring" {
+  description = "Whether to create SES event publishing plus account-level volume and reputation alarms."
+  type        = bool
+  default     = true
+}
+
+variable "ses_alarm_period_seconds" {
+  description = "CloudWatch evaluation period for SES volume and reputation alarms."
+  type        = number
+  default     = 300
+}
+
+variable "ses_send_volume_threshold" {
+  description = "Recipient sends accepted by SES during one alarm period that trigger an outbound-volume alarm."
+  type        = number
+  default     = 100
+}
+
+variable "ses_bounce_rate_threshold" {
+  description = "SES account reputation bounce-rate threshold."
+  type        = number
+  default     = 0.04
+}
+
+variable "ses_complaint_rate_threshold" {
+  description = "SES account reputation complaint-rate threshold."
+  type        = number
+  default     = 0.0008
+}
+
 variable "manage_ses_route53_records" {
   description = "Whether to create SES verification, DKIM, and MAIL FROM Route53 records when route53_zone_id is provided."
   type        = bool

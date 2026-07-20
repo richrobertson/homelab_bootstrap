@@ -54,6 +54,34 @@ wireguard_home_allowed_ips = ["10.31.0.73/32"]
    automation is not managing them.
 6. Reconcile the Mailu Flux overlay after the Vault secrets appear so the
    cluster picks up the relay credentials.
+7. Confirm the SES identity reports `mail_edge_ses_configuration_set_name` as
+   its default configuration set.
+8. Send a test message and confirm its `Send` and `Delivery` metrics appear in
+   CloudWatch with the `ses:configuration-set` dimension.
+
+## SES Events and Reputation Alarms
+
+`enable_ses_monitoring` defaults to true with the mail edge. Terraform creates
+separate SNS topics for raw SES failure events and actionable CloudWatch alarms:
+
+- `mail_edge_ses_event_topic_arn` receives bounce, complaint, reject, and
+  rendering-failure events. Add a durable SQS, Lambda, HTTPS, or other SNS
+  subscription as appropriate; it intentionally has no SMS subscription.
+- `mail_edge_ses_alert_topic_arn` receives the send-surge, account bounce-rate,
+  and account complaint-rate alarms. When the existing canary phone number is
+  configured, it is also subscribed to this alert topic.
+
+The send-volume alarm uses the account-level `AWS/SES` `Send` metric, so it
+works as soon as the resources are applied. The bounce and complaint alarms use
+the free account-level SES reputation metrics. Terraform sets the configuration
+set as the identity default, so event metrics apply to Mailu SMTP traffic
+automatically. They may incur standard CloudWatch custom-metric charges; paid
+Virtual Deliverability Manager is not enabled.
+
+Before production apply, review `ses_send_volume_threshold` against expected
+recipient volume. The default is 100 recipients per five minutes. The default
+bounce and complaint thresholds are intentionally below the AWS account-review
+levels.
 
 ## Email Canary
 

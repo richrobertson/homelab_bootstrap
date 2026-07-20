@@ -55,6 +55,35 @@ output "ses_smtp_password" {
   sensitive   = true
 }
 
+output "ses_configuration_set_name" {
+  description = "SES configuration set to select from Mailu SMTP submissions for fine-grained event publishing."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_ses_configuration_set.mailu[0].name : null
+}
+
+output "ses_configuration_set_header" {
+  description = "Optional SMTP header that explicitly selects the default Mailu SES configuration set."
+  value       = var.enable_ses && var.enable_ses_monitoring ? "X-SES-CONFIGURATION-SET: ${aws_ses_configuration_set.mailu[0].name}" : null
+}
+
+output "ses_event_topic_arn" {
+  description = "SNS topic receiving SES bounce, complaint, reject, and rendering-failure events."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_events[0].arn : null
+}
+
+output "ses_alert_topic_arn" {
+  description = "SNS topic receiving SES CloudWatch volume and reputation alarm notifications."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_alerts[0].arn : null
+}
+
+output "ses_alarm_names" {
+  description = "CloudWatch alarm names for SES outbound volume and account reputation."
+  value = var.enable_ses && var.enable_ses_monitoring ? [
+    aws_cloudwatch_metric_alarm.ses_send_volume[0].alarm_name,
+    aws_cloudwatch_metric_alarm.ses_bounce_reputation[0].alarm_name,
+    aws_cloudwatch_metric_alarm.ses_complaint_reputation[0].alarm_name,
+  ] : []
+}
+
 output "ses_dns_records_to_create" {
   description = "SES DNS records to create manually when Route53 automation is not enabled."
   value       = local.manage_ses_dns_records ? [] : local.ses_dns_records

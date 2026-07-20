@@ -30,6 +30,9 @@ locals {
   instance_name                        = "${var.name_prefix}-mail-edge"
   role_name                            = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-mail-edge-ssm", 0, 64)
   smtp_user_name                       = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-ses-smtp", 0, 64)
+  ses_configuration_set_name           = substr("${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-mailu", 0, 64)
+  ses_event_topic_name                 = "${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-ses-events"
+  ses_alert_topic_name                 = "${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-ses-alerts"
   email_canary_name                    = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-email-canary", 0, 64)
   mail_edge_alert_topic_name           = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-mail-edge-alerts", 0, 256)
   mail_edge_log_group_name             = "/homelab/${var.name_prefix}/mail-edge/haproxy"
@@ -75,19 +78,11 @@ locals {
 
   ses_dns_records = var.enable_ses ? concat(
     [
-      {
-        name    = "_amazonses.${var.mail_domain}"
-        type    = "TXT"
-        ttl     = 300
-        records = [format("\"%s\"", aws_ses_domain_identity.mail[0].verification_token)]
-      }
-    ],
-    [
       for idx in range(3) : {
-        name    = "${aws_ses_domain_dkim.mail[0].dkim_tokens[idx]}._domainkey.${var.mail_domain}"
+        name    = "${aws_sesv2_email_identity.mail[var.mail_domain].dkim_signing_attributes[0].tokens[idx]}._domainkey.${var.mail_domain}"
         type    = "CNAME"
         ttl     = 300
-        records = ["${aws_ses_domain_dkim.mail[0].dkim_tokens[idx]}.dkim.amazonses.com"]
+        records = ["${aws_sesv2_email_identity.mail[var.mail_domain].dkim_signing_attributes[0].tokens[idx]}.dkim.amazonses.com"]
       }
     ],
     [
@@ -147,6 +142,8 @@ locals {
 
 data "aws_partition" "current" {}
 
+data "aws_caller_identity" "current" {}
+
 data "aws_availability_zones" "available" {
   count = var.create_vpc && var.subnet_availability_zone == null ? 1 : 0
 
@@ -198,6 +195,28 @@ data "aws_iam_policy_document" "mail_edge_cloudwatch_logs" {
       "logs:PutLogEvents",
     ]
     resources = ["${aws_cloudwatch_log_group.mail_edge_haproxy[0].arn}:*"]
+  }
+}
+
+data "aws_iam_policy_document" "ses_event_topic" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  statement {
+    sid       = "AllowSESEventPublishing"
+    effect    = "Allow"
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.ses_events[0].arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ses.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
   }
 }
 
@@ -651,20 +670,31 @@ resource "aws_eip_domain_name" "mail_edge" {
   domain_name   = aws_route53_record.mail_a[0].fqdn
 }
 
-resource "aws_ses_domain_identity" "mail" {
-  count = var.enable_ses ? 1 : 0
-
-  domain = var.mail_domain
+removed {
+  from = aws_ses_domain_identity.mail
 
   lifecycle {
-    prevent_destroy = true
+    destroy = false
   }
 }
 
-resource "aws_ses_domain_dkim" "mail" {
-  count = var.enable_ses ? 1 : 0
+removed {
+  from = aws_ses_domain_dkim.mail
 
-  domain = aws_ses_domain_identity.mail[0].domain
+  lifecycle {
+    destroy = false
+  }
+}
+
+resource "aws_sesv2_email_identity" "mail" {
+  for_each = var.enable_ses ? toset([var.mail_domain]) : toset([])
+
+  email_identity         = each.key
+  configuration_set_name = var.enable_ses_monitoring ? aws_ses_configuration_set.mailu[0].name : null
+
+  dkim_signing_attributes {
+    next_signing_key_length = "RSA_2048_BIT"
+  }
 
   lifecycle {
     prevent_destroy = true
@@ -674,7 +704,7 @@ resource "aws_ses_domain_dkim" "mail" {
 resource "aws_ses_domain_mail_from" "mail" {
   count = var.enable_ses ? 1 : 0
 
-  domain           = aws_ses_domain_identity.mail[0].domain
+  domain           = aws_sesv2_email_identity.mail[var.mail_domain].email_identity
   mail_from_domain = local.mail_from_domain
 
   lifecycle {
@@ -682,24 +712,14 @@ resource "aws_ses_domain_mail_from" "mail" {
   }
 }
 
-resource "aws_route53_record" "ses_verification" {
-  count = local.manage_ses_dns_records ? 1 : 0
-
-  zone_id = var.route53_zone_id
-  name    = "_amazonses.${var.mail_domain}"
-  type    = "TXT"
-  ttl     = 300
-  records = [format("\"%s\"", aws_ses_domain_identity.mail[0].verification_token)]
-}
-
 resource "aws_route53_record" "ses_dkim" {
   count = local.manage_ses_dns_records ? 3 : 0
 
   zone_id = var.route53_zone_id
-  name    = "${aws_ses_domain_dkim.mail[0].dkim_tokens[count.index]}._domainkey.${var.mail_domain}"
+  name    = "${aws_sesv2_email_identity.mail[var.mail_domain].dkim_signing_attributes[0].tokens[count.index]}._domainkey.${var.mail_domain}"
   type    = "CNAME"
   ttl     = 300
-  records = ["${aws_ses_domain_dkim.mail[0].dkim_tokens[count.index]}.dkim.amazonses.com"]
+  records = ["${aws_sesv2_email_identity.mail[var.mail_domain].dkim_signing_attributes[0].tokens[count.index]}.dkim.amazonses.com"]
 }
 
 resource "aws_route53_record" "ses_mail_from_mx" {
@@ -722,16 +742,125 @@ resource "aws_route53_record" "ses_mail_from_txt" {
   records = ["\"v=spf1 include:amazonses.com ~all\""]
 }
 
-resource "aws_ses_domain_identity_verification" "mail" {
-  count = local.manage_ses_dns_records && var.wait_for_ses_domain_verification ? 1 : 0
+resource "aws_ses_configuration_set" "mailu" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
 
-  domain = aws_ses_domain_identity.mail[0].domain
+  name                       = local.ses_configuration_set_name
+  reputation_metrics_enabled = false
+  sending_enabled            = true
+}
 
-  depends_on = [aws_route53_record.ses_verification]
+resource "aws_sns_topic" "ses_events" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
 
-  lifecycle {
-    prevent_destroy = true
+  name = local.ses_event_topic_name
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_policy" "ses_events" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  arn    = aws_sns_topic.ses_events[0].arn
+  policy = data.aws_iam_policy_document.ses_event_topic[0].json
+}
+
+resource "aws_ses_event_destination" "cloudwatch" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  name                   = "cloudwatch"
+  configuration_set_name = aws_ses_configuration_set.mailu[0].name
+  enabled                = true
+  matching_types         = ["send", "reject", "bounce", "complaint", "delivery", "renderingFailure"]
+
+  cloudwatch_destination {
+    default_value  = aws_ses_configuration_set.mailu[0].name
+    dimension_name = "ses:configuration-set"
+    value_source   = "messageTag"
   }
+}
+
+resource "aws_ses_event_destination" "sns_failures" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  name                   = "sns-failures"
+  configuration_set_name = aws_ses_configuration_set.mailu[0].name
+  enabled                = true
+  matching_types         = ["reject", "bounce", "complaint", "renderingFailure"]
+
+  sns_destination {
+    topic_arn = aws_sns_topic.ses_events[0].arn
+  }
+
+  depends_on = [aws_sns_topic_policy.ses_events]
+}
+
+resource "aws_sns_topic" "ses_alerts" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  name = local.ses_alert_topic_name
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_subscription" "ses_alerts_sms" {
+  count = var.enable_ses && var.enable_ses_monitoring && var.email_canary_alert_phone_number != null ? 1 : 0
+
+  topic_arn = aws_sns_topic.ses_alerts[0].arn
+  protocol  = "sms"
+  endpoint  = var.email_canary_alert_phone_number
+}
+
+resource "aws_cloudwatch_metric_alarm" "ses_send_volume" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  alarm_name          = "${local.ses_configuration_set_name}-send-volume"
+  alarm_description   = "SES accepted at least ${var.ses_send_volume_threshold} recipients in ${var.ses_alarm_period_seconds} seconds. Investigate unexpected outbound volume."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  metric_name         = "Send"
+  namespace           = "AWS/SES"
+  period              = var.ses_alarm_period_seconds
+  statistic           = "Sum"
+  threshold           = var.ses_send_volume_threshold
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.ses_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "ses_bounce_reputation" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  alarm_name          = "${local.ses_configuration_set_name}-bounce-reputation"
+  alarm_description   = "SES account bounce reputation reached ${var.ses_bounce_rate_threshold}; AWS reviews accounts above 0.05."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  metric_name         = "Reputation.BounceRate"
+  namespace           = "AWS/SES"
+  period              = var.ses_alarm_period_seconds
+  statistic           = "Average"
+  threshold           = var.ses_bounce_rate_threshold
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.ses_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "ses_complaint_reputation" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  alarm_name          = "${local.ses_configuration_set_name}-complaint-reputation"
+  alarm_description   = "SES account complaint reputation reached ${var.ses_complaint_rate_threshold}; AWS reviews accounts above 0.001."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  metric_name         = "Reputation.ComplaintRate"
+  namespace           = "AWS/SES"
+  period              = var.ses_alarm_period_seconds
+  statistic           = "Average"
+  threshold           = var.ses_complaint_rate_threshold
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.ses_alerts[0].arn]
+  tags                = local.common_tags
 }
 
 resource "aws_iam_user" "ses_smtp" {
