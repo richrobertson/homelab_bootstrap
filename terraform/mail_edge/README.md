@@ -10,6 +10,9 @@ home-hosted Mailu deployment.
   table.
 - Optionally attach SSM Session Manager access.
 - Configure WireGuard and HAProxy with EC2 `user_data`.
+- Persist HAProxy journald records locally, export structured connection logs to
+  a retention-managed CloudWatch Logs group, and alarm on SMTP connection
+  surges, unavailable backends, and EC2 status-check failures.
 - Create SES identity, DKIM, custom MAIL FROM, and SMTP credentials.
 - Optionally create a Lambda email canary that runs every five minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
@@ -83,6 +86,20 @@ traverses the same external path as real mail:
   "use_ssl": true
 }
 ```
+
+## Edge Observability
+
+`enable_cloudwatch_observability` defaults to `true`. Terraform creates the
+log group and its retention policy, grants the EC2 role access only to streams
+in that group, and uses an SSM State Manager association to configure existing
+as well as newly created edge instances. AL2023 journald remains the local
+source of truth; a cursor-backed exporter writes only HAProxy records to a
+bounded file that CloudWatch Agent tails.
+
+HAProxy connection records are JSON and include `source_ip`, `source_port`,
+`frontend`, `backend`, duration, byte count, and termination state. They retain
+the public address at the AWS edge even when WireGuard or Kubernetes later
+SNATs the connection.
 
 ## Root Integration
 

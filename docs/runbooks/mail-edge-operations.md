@@ -100,6 +100,45 @@ mailbox and point IMAP at the public edge hostname:
 That path verifies `SES -> public MX -> AWS edge -> WireGuard ->
 mailu-front-ext on 10.31.0.73 -> Mailu/Dovecot -> IMAP folder`.
 
+## HAProxy Source-IP Logs
+
+With `enable_mail_edge_cloudwatch_observability = true`, use output
+`mail_edge_haproxy_log_group_name` to open the edge log group. The default
+CloudWatch retention is 30 days. The edge also keeps up to seven days of
+bounded persistent journal and rotated export data for short CloudWatch
+outages.
+
+Use this Logs Insights query to identify public SMTP contributors:
+
+```text
+fields @timestamp, source_ip, source_port, duration_ms, bytes_read, termination_state
+| filter event = "connection" and frontend = "fe_mail_25"
+| stats count(*) as connections,
+        sum(bytes_read) as bytes,
+        max(duration_ms) as longest_ms
+  by source_ip
+| sort connections desc
+| limit 50
+```
+
+The SMTP surge alarm counts edge connections, not SMTP messages or recipients;
+TLS and TCP proxying keep SMTP commands opaque to HAProxy. Tune
+`mail_edge_smtp_connection_alarm_threshold` against the observed baseline and
+keep the Mailu/Postfix recipient-volume alert enabled for message-level abuse.
+
+Validate the pipeline on the instance through SSM:
+
+```sh
+sudo journalctl -t haproxy --since '-10 minutes'
+sudo systemctl status mail-edge-haproxy-export amazon-cloudwatch-agent
+sudo tail -n 20 /var/log/mail-edge/haproxy.log
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+```
+
+Do not add HAProxy `send-proxy`/`send-proxy-v2` independently. Mailu must be
+configured to expect the same header on that port, and current shared LAN
+listeners make such a change unsafe without first separating traffic paths.
+
 ## Manual DNS Outputs
 
 Use these outputs when public DNS is not fully managed by Terraform:

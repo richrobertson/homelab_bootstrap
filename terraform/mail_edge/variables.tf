@@ -73,6 +73,57 @@ variable "enable_ssm_session_manager" {
   default     = true
 }
 
+variable "enable_cloudwatch_observability" {
+  description = "Whether to centralize HAProxy edge logs in CloudWatch and create abuse/availability alarms. Requires Session Manager so State Manager can configure existing instances."
+  type        = bool
+  default     = true
+
+  validation {
+    condition     = !var.enable_cloudwatch_observability || var.enable_ssm_session_manager
+    error_message = "enable_ssm_session_manager must be true when enable_cloudwatch_observability is enabled."
+  }
+}
+
+variable "mail_edge_log_retention_days" {
+  description = "CloudWatch Logs retention for structured HAProxy connection logs."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.mail_edge_log_retention_days)
+    error_message = "mail_edge_log_retention_days must be a retention period supported by CloudWatch Logs."
+  }
+}
+
+variable "mail_edge_local_log_max_bytes" {
+  description = "Maximum persistent journald disk usage on the edge before old entries are vacuumed."
+  type        = string
+  default     = "512M"
+
+  validation {
+    condition     = can(regex("^[1-9][0-9]*[KMG]$", var.mail_edge_local_log_max_bytes))
+    error_message = "mail_edge_local_log_max_bytes must be a systemd size such as 512M or 1G."
+  }
+}
+
+variable "mail_edge_smtp_connection_alarm_threshold" {
+  description = "Five-minute public SMTP connection count that triggers the edge abuse-volume alarm."
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.mail_edge_smtp_connection_alarm_threshold > 0
+    error_message = "mail_edge_smtp_connection_alarm_threshold must be greater than zero."
+  }
+}
+
+variable "mail_edge_alert_phone_number" {
+  description = "Optional E.164 phone number subscribed to Mailu edge CloudWatch alarm notifications."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "wireguard_listen_port" {
   description = "UDP port used by the WireGuard listener."
   type        = number

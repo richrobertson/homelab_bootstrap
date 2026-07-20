@@ -31,6 +31,38 @@ on Mailu through the EC2 edge and WireGuard tunnel.
 The [email canary design](email-canary.md) adds continuous delivery checks on
 top of this transport path.
 
+## Source Address and PROXY Protocol
+
+HAProxy sees the original public source before forwarding traffic through
+WireGuard. Structured HAProxy records are therefore the authoritative source
+for incident attribution when the home path SNATs connections to a Kubernetes
+node address.
+
+Mailu chart 2.7.0 supports PROXY protocol per mail port and requires a trusted
+`ingress.realIpFrom`. HAProxy can send the corresponding v2 header with
+`send-proxy-v2`, but it is intentionally not enabled by this module. The same
+Mailu listeners currently serve both the AWS edge and direct LAN clients; once
+a listener expects PROXY protocol, every client on that listener must send the
+header. Enabling only one side also makes the port immediately unavailable.
+
+A future migration must first provide separate edge-only listeners or route all
+clients through a trusted PROXY-protocol sender. Then enable one canary port on
+HAProxy and Mailu in the same maintenance window, verify the public address in
+Mailu/Postfix logs, and expand port by port. Until then, centralized edge logs
+provide source visibility without changing transport semantics.
+
+## Edge Log Pipeline
+
+```text
+HAProxy syslog -> AL2023 persistent journald -> cursor-backed HAProxy export
+  -> CloudWatch Agent -> retention-managed CloudWatch Logs
+  -> metric filters -> CloudWatch alarms -> SNS
+```
+
+The instance policy can create streams and write events only beneath its
+Terraform-created HAProxy log group. It cannot create arbitrary log groups or
+publish arbitrary CloudWatch metrics.
+
 ## Terraform Scope
 
 [terraform/mail_edge](../../terraform/mail_edge/README.md) creates:

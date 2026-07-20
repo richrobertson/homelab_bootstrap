@@ -113,6 +113,37 @@ variable "enable_ssm_session_manager" {
   default     = true
 }
 
+variable "enable_mail_edge_cloudwatch_observability" {
+  description = "Whether to centralize HAProxy edge logs in CloudWatch and create source-volume and availability alarms."
+  type        = bool
+  default     = true
+}
+
+variable "mail_edge_log_retention_days" {
+  description = "CloudWatch Logs retention for structured HAProxy edge connection logs."
+  type        = number
+  default     = 30
+}
+
+variable "mail_edge_local_log_max_bytes" {
+  description = "Maximum persistent journald disk use reserved for local mail-edge evidence."
+  type        = string
+  default     = "512M"
+}
+
+variable "mail_edge_smtp_connection_alarm_threshold" {
+  description = "Five-minute public SMTP connection count that triggers the edge abuse-volume alarm."
+  type        = number
+  default     = 25
+}
+
+variable "mail_edge_alert_phone_number" {
+  description = "Optional E.164 cellphone number override for mail-edge CloudWatch alarms. Defaults to email_canary_alerts_vault_path."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "wireguard_listen_port" {
   description = "UDP port used by the WireGuard listener on the EC2 mail edge."
   type        = number

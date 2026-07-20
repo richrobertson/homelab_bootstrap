@@ -17,6 +17,11 @@ module "mail_edge" {
   instance_type                                 = var.instance_type
   key_name                                      = var.key_name
   enable_ssm_session_manager                    = var.enable_ssm_session_manager
+  enable_cloudwatch_observability               = var.enable_mail_edge_cloudwatch_observability
+  mail_edge_log_retention_days                  = var.mail_edge_log_retention_days
+  mail_edge_local_log_max_bytes                 = var.mail_edge_local_log_max_bytes
+  mail_edge_smtp_connection_alarm_threshold     = var.mail_edge_smtp_connection_alarm_threshold
+  mail_edge_alert_phone_number                  = try(coalesce(var.mail_edge_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null)), null)
   wireguard_listen_port                         = var.wireguard_listen_port
   home_mailu_tunnel_ip                          = var.home_mailu_tunnel_ip
   home_wireguard_peer_public_key                = var.home_wireguard_peer_public_key

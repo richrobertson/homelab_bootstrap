@@ -1,0 +1,101 @@
+#!/bin/bash
+set -euo pipefail
+
+dnf install -y amazon-cloudwatch-agent logrotate
+
+# AL2023 uses journald instead of rsyslog. Keep a bounded persistent journal so
+# edge evidence survives reboots and brief CloudWatch delivery interruptions.
+install -d -m 0755 /var/log/journal /etc/systemd/journald.conf.d
+cat >/etc/systemd/journald.conf.d/mail-edge.conf <<'JOURNALEOF'
+[Journal]
+Storage=persistent
+SystemMaxUse=${local_log_max_bytes}
+RuntimeMaxUse=128M
+MaxRetentionSec=7day
+JOURNALEOF
+systemctl restart systemd-journald
+
+# Preserve the public source address in a structured connection record at the
+# AWS edge. This changes logging only; HAProxy's TCP forwarding is unchanged.
+sed -i '/^  option tcplog$/d' /etc/haproxy/haproxy.cfg
+if ! grep -Fq '"event":"connection"' /etc/haproxy/haproxy.cfg; then
+  sed -i "/^  option dontlognull$/a\\  log-format '{\"event\":\"connection\",\"timestamp\":\"%t\",\"source_ip\":\"%ci\",\"source_port\":%cp,\"frontend\":\"%ft\",\"backend\":\"%b\",\"server\":\"%s\",\"duration_ms\":%Tt,\"bytes_read\":%B,\"termination_state\":\"%ts\",\"active_connections\":%ac,\"frontend_connections\":%fc,\"backend_connections\":%bc,\"server_connections\":%sc,\"retries\":%rc}'" /etc/haproxy/haproxy.cfg
+fi
+haproxy -c -f /etc/haproxy/haproxy.cfg
+systemctl reload haproxy
+
+# CloudWatch Agent accepts regular files on Linux, not the systemd journal
+# directly. Export only HAProxy journal records with a durable cursor, then let
+# the agent tail the bounded text file.
+install -d -m 0750 /var/log/mail-edge /var/lib/mail-edge-haproxy-export
+cat >/etc/systemd/system/mail-edge-haproxy-export.service <<'SERVICEEOF'
+[Unit]
+Description=Export HAProxy journal records for CloudWatch Agent
+After=systemd-journald.service haproxy.service
+Requires=systemd-journald.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/journalctl --follow --no-tail --cursor-file=/var/lib/mail-edge-haproxy-export/cursor --output=cat SYSLOG_IDENTIFIER=haproxy
+StandardOutput=append:/var/log/mail-edge/haproxy.log
+StandardError=journal
+Restart=always
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+cat >/etc/logrotate.d/mail-edge-haproxy <<'ROTATEEOF'
+/var/log/mail-edge/haproxy.log {
+    daily
+    maxsize 50M
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}
+ROTATEEOF
+
+install -d -m 0755 /opt/aws/amazon-cloudwatch-agent/etc
+cat >/opt/aws/amazon-cloudwatch-agent/etc/mail-edge.json <<'AGENTEOF'
+{
+  "agent": {
+    "region": "${aws_region}",
+    "run_as_user": "root"
+  },
+  "logs": {
+    "force_flush_interval": 5,
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/mail-edge/haproxy.log",
+            "log_group_name": "${haproxy_log_group}",
+            "log_stream_name": "{instance_id}",
+            "encoding": "utf-8",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}
+AGENTEOF
+
+systemctl daemon-reload
+systemctl enable --now mail-edge-haproxy-export.service
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config \
+  -m ec2 \
+  -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/mail-edge.json
+
+systemctl is-active --quiet haproxy
+systemctl is-active --quiet mail-edge-haproxy-export.service
+systemctl is-active --quiet amazon-cloudwatch-agent

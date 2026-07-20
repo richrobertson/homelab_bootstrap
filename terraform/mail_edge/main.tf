@@ -31,6 +31,9 @@ locals {
   role_name                            = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-mail-edge-ssm", 0, 64)
   smtp_user_name                       = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-ses-smtp", 0, 64)
   email_canary_name                    = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-email-canary", 0, 64)
+  mail_edge_alert_topic_name           = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-mail-edge-alerts", 0, 256)
+  mail_edge_log_group_name             = "/homelab/${var.name_prefix}/mail-edge/haproxy"
+  mail_edge_metric_namespace           = "Homelab/MailEdge"
   instance_architecture                = startswith(var.instance_type, "t4g.") ? "arm64" : "x86_64"
   ami_parameter_name                   = local.instance_architecture == "arm64" ? "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64" : "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
   manage_ses_dns_records               = var.enable_ses && var.manage_ses_route53_records && var.route53_zone_id != null
@@ -163,6 +166,20 @@ data "aws_iam_policy_document" "ses_smtp_send" {
     effect    = "Allow"
     actions   = ["ses:SendRawEmail"]
     resources = ["*"]
+  }
+}
+
+data "aws_iam_policy_document" "mail_edge_cloudwatch_logs" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:DescribeLogStreams",
+      "logs:PutLogEvents",
+    ]
+    resources = ["${aws_cloudwatch_log_group.mail_edge_haproxy[0].arn}:*"]
   }
 }
 
@@ -350,6 +367,14 @@ resource "aws_iam_role_policy_attachment" "ssm_core" {
   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+resource "aws_iam_role_policy" "mail_edge_cloudwatch_logs" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  name   = "${local.role_name}-cloudwatch-logs"
+  role   = aws_iam_role.ssm[0].id
+  policy = data.aws_iam_policy_document.mail_edge_cloudwatch_logs[0].json
+}
+
 resource "aws_iam_instance_profile" "ssm" {
   count = var.enable_ssm_session_manager ? 1 : 0
 
@@ -422,6 +447,150 @@ resource "aws_eip" "mail_edge" {
 resource "aws_eip_association" "mail_edge" {
   allocation_id = aws_eip.mail_edge.id
   instance_id   = aws_instance.mail_edge.id
+}
+
+# HAProxy logs contain connection metadata and public source IP addresses. The
+# log group is created by Terraform so the instance only needs stream-scoped
+# write permissions, not broad CloudWatchAgentServerPolicy access.
+resource "aws_cloudwatch_log_group" "mail_edge_haproxy" { # nosemgrep: terraform.aws.security.aws-cloudwatch-log-group-unencrypted.aws-cloudwatch-log-group-unencrypted
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  name              = local.mail_edge_log_group_name
+  retention_in_days = var.mail_edge_log_retention_days
+  tags              = local.common_tags
+}
+
+resource "aws_sns_topic" "mail_edge_alerts" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  name = local.mail_edge_alert_topic_name
+  tags = local.common_tags
+}
+
+resource "aws_sns_topic_subscription" "mail_edge_alerts_sms" {
+  count = var.enable_cloudwatch_observability && var.mail_edge_alert_phone_number != null ? 1 : 0
+
+  topic_arn = aws_sns_topic.mail_edge_alerts[0].arn
+  protocol  = "sms"
+  endpoint  = var.mail_edge_alert_phone_number
+}
+
+resource "aws_cloudwatch_log_metric_filter" "smtp_connections" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  name           = "${local.instance_name}-smtp-connections"
+  log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+  pattern        = "{ $.event = \"connection\" && $.frontend = \"fe_mail_25\" }"
+
+  metric_transformation {
+    name          = "SmtpConnections"
+    namespace     = local.mail_edge_metric_namespace
+    value         = "1"
+    default_value = "0"
+    unit          = "Count"
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "backend_unavailable" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  name           = "${local.instance_name}-backend-unavailable"
+  log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+  pattern        = "\"has no server available\""
+
+  metric_transformation {
+    name          = "BackendUnavailable"
+    namespace     = local.mail_edge_metric_namespace
+    value         = "1"
+    default_value = "0"
+    unit          = "Count"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "smtp_connection_surge" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-smtp-connection-surge"
+  alarm_description   = "Public SMTP connection volume at the Mailu AWS edge exceeded the expected homelab baseline. Use the HAProxy log group's source_ip field to identify top contributors."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.smtp_connections[0].metric_transformation[0].name
+  namespace           = local.mail_edge_metric_namespace
+  period              = 300
+  statistic           = "Sum"
+  threshold           = var.mail_edge_smtp_connection_alarm_threshold
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "backend_unavailable" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-backend-unavailable"
+  alarm_description   = "HAProxy reported that a Mailu backend had no available server."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = aws_cloudwatch_log_metric_filter.backend_unavailable[0].metric_transformation[0].name
+  namespace           = local.mail_edge_metric_namespace
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  tags                = local.common_tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "instance_status" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  alarm_name          = "${local.instance_name}-instance-status"
+  alarm_description   = "The EC2 mail edge failed an instance or system status check."
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 2
+  metric_name         = "StatusCheckFailed"
+  namespace           = "AWS/EC2"
+  period              = 60
+  statistic           = "Maximum"
+  threshold           = 1
+  treat_missing_data  = "breaching"
+  alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+
+  dimensions = {
+    InstanceId = aws_instance.mail_edge.id
+  }
+
+  tags = local.common_tags
+}
+
+# State Manager configures both existing and newly created edge instances.
+# Relying on user_data alone would not update an already-running instance.
+resource "aws_ssm_association" "mail_edge_observability" {
+  count = var.enable_cloudwatch_observability ? 1 : 0
+
+  association_name = "${local.instance_name}-observability"
+  name             = "AWS-RunShellScript"
+
+  parameters = {
+    commands = templatefile("${path.module}/templates/configure_observability.sh.tftpl", {
+      aws_region          = var.aws_region
+      haproxy_log_group   = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
+      local_log_max_bytes = var.mail_edge_local_log_max_bytes
+    })
+  }
+
+  targets {
+    key    = "InstanceIds"
+    values = [aws_instance.mail_edge.id]
+  }
+
+  depends_on = [
+    aws_eip_association.mail_edge,
+    aws_iam_role_policy.mail_edge_cloudwatch_logs,
+  ]
 }
 
 resource "aws_route53_record" "mail_a" {

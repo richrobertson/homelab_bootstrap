@@ -94,3 +94,13 @@ output "email_canary_probe_names" {
   description = "Names of the email canary probes configured for the Lambda."
   value       = [for probe in local.email_canary_probes : probe.name]
 }
+
+output "haproxy_log_group_name" {
+  description = "CloudWatch Logs group containing structured HAProxy edge connection records."
+  value       = var.enable_cloudwatch_observability ? aws_cloudwatch_log_group.mail_edge_haproxy[0].name : null
+}
+
+output "mail_edge_alert_topic_arn" {
+  description = "SNS topic used by Mailu edge availability and abuse-volume alarms."
+  value       = var.enable_cloudwatch_observability ? aws_sns_topic.mail_edge_alerts[0].arn : null
+}
