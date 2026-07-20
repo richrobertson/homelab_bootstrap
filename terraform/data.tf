@@ -33,7 +33,14 @@ data "vault_generic_secret" "volsync_s3_settings" {
 }
 
 data "vault_generic_secret" "email_canary_alerts" {
-  count = var.enable_email_canary || (var.mail_edge_enabled && (var.enable_mail_edge_cloudwatch_observability || (var.enable_ses && var.enable_ses_monitoring))) ? 1 : 0
+  count = (
+    (var.enable_email_canary && var.email_canary_alert_phone_number == null) ||
+    (
+      var.mail_edge_enabled &&
+      var.mail_edge_alert_phone_number == null &&
+      (var.enable_mail_edge_cloudwatch_observability || (var.enable_ses && var.enable_ses_monitoring))
+    )
+  ) ? 1 : 0
 
   path = var.email_canary_alerts_vault_path
 }
