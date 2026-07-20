@@ -19,19 +19,20 @@ override_resource {
 }
 
 variables {
-  aws_region                     = "us-west-2"
-  name_prefix                    = "test-mail-edge"
-  ami_id                         = "ami-0123456789abcdef0"
-  enable_ssm_session_manager     = false
-  home_wireguard_peer_public_key = "test-home-public-key"
-  wireguard_ec2_private_key      = "test-ec2-private-key"
-  wireguard_ec2_public_key       = "test-ec2-public-key"
-  mail_domain                    = "example.com"
-  enable_ses                     = true
-  enable_ses_monitoring          = true
-  ses_send_volume_threshold      = 100
-  ses_bounce_rate_threshold      = 0.04
-  ses_complaint_rate_threshold   = 0.0008
+  aws_region                      = "us-west-2"
+  name_prefix                     = "test-mail-edge"
+  ami_id                          = "ami-0123456789abcdef0"
+  enable_ssm_session_manager      = false
+  enable_cloudwatch_observability = false
+  home_wireguard_peer_public_key  = "test-home-public-key"
+  wireguard_ec2_private_key       = "test-ec2-private-key"
+  wireguard_ec2_public_key        = "test-ec2-public-key"
+  mail_domain                     = "example.com"
+  enable_ses                      = true
+  enable_ses_monitoring           = true
+  ses_send_volume_threshold       = 100
+  ses_bounce_rate_threshold       = 0.04
+  ses_complaint_rate_threshold    = 0.0008
 }
 
 run "ses_monitoring_enabled" {
