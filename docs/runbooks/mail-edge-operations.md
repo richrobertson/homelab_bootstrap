@@ -25,9 +25,9 @@ To verify delivery into Kubernetes-hosted Mailu Dovecot folders, set
 `mailu_dovecot_canary_imap_secret_arn`.
 
 To detect a recurrence of unauthenticated SMTP relaying, set
-`enable_open_relay_canary = true` after confirming the Lambda can reach the
-public MX on port 25. The canary is deliberately RCPT-only and never sends a
-message body.
+`enable_open_relay_canary = true`. The edge-host canary is deliberately
+RCPT-only, targets the home Mailu endpoint on port 25 across WireGuard, and has
+no code path that can send a message body.
 
 Generate the EC2 WireGuard keypair before applying. Terraform expects both
 halves explicitly so it can bootstrap the instance and render the home peer
@@ -36,9 +36,13 @@ config without depending on a local shell helper.
 For the production Mailu overlay, use the expected home-side Mailu Service IP:
 
 ```hcl
-home_mailu_tunnel_ip       = "10.31.0.73"
-wireguard_home_allowed_ips = ["10.31.0.73/32"]
+home_mailu_tunnel_ip       = "10.109.196.109"
+wireguard_home_allowed_ips = ["10.109.196.109/32"]
 ```
+
+This must be the Mailu front ClusterIP, not the `10.31.0.73` LAN MetalLB VIP.
+The ClusterIP route is what Kubernetes SNATs to the worker-2 CNI gateway
+`10.244.5.1`, selecting Postfix's `aws_edge_inbound_only` restriction class.
 
 ## Post-Apply Steps
 
@@ -132,7 +136,36 @@ mailbox and point IMAP at the public edge hostname:
 ```
 
 That path verifies `SES -> public MX -> AWS edge -> WireGuard ->
-mailu-front-ext on 10.31.0.73 -> Mailu/Dovecot -> IMAP folder`.
+mailu-front ClusterIP on 10.109.196.109 -> Mailu/Dovecot -> IMAP folder`.
+
+## Relay-Policy Canary
+
+The systemd timer runs every five minutes on the AWS mail edge and connects to
+`home_mailu_tunnel_ip:25`. The expected Postfix `5.7.1 Relay access denied`
+RCPT response is healthy, a 2xx response (including 251/252) is critical, and
+any other 4xx/5xx, transport, or protocol failure is indeterminate. Every
+result is a JSON heartbeat in the edge CloudWatch log group. CloudWatch alarms
+on either failure state and on three consecutive missing five-minute
+heartbeats.
+
+Inspect or run it through SSM:
+
+```sh
+sudo systemctl status mail-edge-relay-canary.timer
+sudo systemctl start mail-edge-relay-canary.service || true
+sudo journalctl -u mail-edge-relay-canary.service --since '-15 minutes'
+sudo tail -n 20 /var/log/mail-edge/relay-canary.log
+```
+
+The service intentionally exits nonzero for critical and indeterminate results,
+which is why the one-off command tolerates the exit while evidence is inspected.
+It always stops after `RCPT TO`; it never sends `DATA`.
+
+This check covers the exact edge-to-home Postfix restriction path involved in
+the relay incident. It does not traverse the public Elastic IP, security group,
+public DNS, HAProxy listener, or TLS, and does not prove how Postfix treats an
+arbitrary internet source. Keep a truly external SMTP monitor or controlled VPS
+probe for those layers.
 
 ## HAProxy Source-IP Logs
 

@@ -19,8 +19,9 @@ home-hosted Mailu deployment.
 - Optionally create a Lambda email canary that runs every five minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
   when sending or delivery is delayed or rejected.
-- Optionally extend that Lambda with a public-MX open-relay canary that stops
-  after `RCPT TO`, always resets the transaction, and never sends `DATA`.
+- Optionally install an edge-host RCPT-only relay-policy canary that exercises
+  the WireGuard-to-home Postfix path, emits CloudWatch heartbeats, and never
+  sends `DATA`.
 - Optionally create Route53 records and Elastic IP reverse DNS.
 
 ## Destroy Guardrails
@@ -47,7 +48,7 @@ Mailu Dovecot canary:
 EventBridge -> Lambda -> SES -> public MX -> AWS edge -> WireGuard -> Mailu -> Dovecot IMAP -> SNS/SMS alert
 
 Open-relay canary:
-EventBridge -> Lambda -> public MX:25 -> EHLO/MAIL FROM/RCPT TO -> RSET/QUIT -> SNS/SMS alert
+systemd timer on AWS edge -> WireGuard -> home Mailu:25 -> EHLO/MAIL FROM/RCPT TO -> RSET/QUIT -> CloudWatch/SNS alert
 ```
 
 ## SES Monitoring
@@ -144,15 +145,29 @@ SNATs the connection.
 
 ## Open-Relay Canary
 
-To check the unauthenticated public MX path for relaying, set
-`enable_open_relay_canary = true`. The check uses reserved `example.com` and
-`example.net` addresses, treats only a permanent 5xx response to `RCPT TO` as
-healthy, and sends `RSET` then `QUIT` without ever entering `DATA`. Keep the
-default port at 25; testing submission port 587 would not cover an MX relay
-regression. Confirm that the Lambda account/region is permitted to make public
-port-25 connections before enabling it, because AWS commonly throttles that
-traffic. A timeout or 4xx response alerts as inconclusive rather than claiming
-the relay is closed.
+Set `enable_open_relay_canary = true` to install a five-minute systemd timer on
+the AWS mail-edge EC2 instance. The probe connects directly to
+`effective_home_mailu_tunnel_ip:25` across WireGuard. The resulting connection
+enters the home Mailu Service through the same Kubernetes SNAT and Postfix
+`aws_edge_inbound_only` restriction class as production traffic forwarded by
+the edge. In production, configure the target as the Mailu front ClusterIP
+`10.109.196.109`, not the `10.31.0.73` LAN MetalLB VIP. Kubernetes then presents
+the worker-2 CNI gateway `10.244.5.1` to Postfix.
+
+The probe uses reserved `example.com` and `example.net` addresses. The expected
+Postfix `5.7.1 Relay access denied` response is healthy, any 2xx response
+(including 251/252) is critical, and any other 4xx/5xx, transport, or protocol
+failure is indeterminate. Every attempt emits a JSON heartbeat to CloudWatch.
+Separate alarms cover critical results, indeterminate results, and three
+missing five-minute heartbeats. The SMTP state machine has no `DATA` command
+and attempts only `RSET` and `QUIT` after RCPT.
+
+This is intentionally a regression check for the incident path, not a truly
+external open-relay test. It bypasses the public Elastic IP, security group,
+public DNS, HAProxy listener, and TLS, and it originates only from the trusted
+AWS edge. Retain an independent external SMTP monitor or controlled VPS probe
+to cover those layers and source-dependent behavior from arbitrary internet
+addresses.
 
 ## Root Integration
 

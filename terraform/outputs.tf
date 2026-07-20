@@ -165,6 +165,16 @@ output "mail_edge_email_canary_probe_names" {
   value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].email_canary_probe_names)
 }
 
+output "mail_edge_open_relay_canary_alarm_names" {
+  description = "CloudWatch alarms for critical, indeterminate, and missing-heartbeat relay canary results."
+  value       = length(module.mail_edge) == 0 ? [] : nonsensitive(module.mail_edge[0].open_relay_canary_alarm_names)
+}
+
+output "mail_edge_open_relay_canary_target" {
+  description = "WireGuard-side Mailu SMTP endpoint exercised by the edge-host relay canary."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].open_relay_canary_target)
+}
+
 output "mail_edge_haproxy_log_group_name" {
   description = "CloudWatch Logs group containing structured HAProxy edge connection records."
   value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].haproxy_log_group_name)

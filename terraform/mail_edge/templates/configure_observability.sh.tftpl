@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-dnf install -y amazon-cloudwatch-agent logrotate
+dnf install -y amazon-cloudwatch-agent logrotate python3
 
 # AL2023 uses journald instead of rsyslog. Keep a bounded persistent journal so
 # edge evidence survives reboots and brief CloudWatch delivery interruptions.
@@ -62,6 +62,81 @@ cat >/etc/logrotate.d/mail-edge-haproxy <<'ROTATEEOF'
 }
 ROTATEEOF
 
+%{ if relay_canary_enabled }
+install -d -m 0755 /usr/local/libexec
+base64 --decode >/usr/local/libexec/mail-edge-relay-canary.py <<'CANARYPYEOF'
+${relay_canary_script_b64}
+CANARYPYEOF
+chmod 0755 /usr/local/libexec/mail-edge-relay-canary.py
+touch /var/log/mail-edge/relay-canary.log
+chown root:root /var/log/mail-edge/relay-canary.log
+chmod 0640 /var/log/mail-edge/relay-canary.log
+
+cat >/etc/systemd/system/mail-edge-relay-canary.service <<'SERVICEEOF'
+[Unit]
+Description=Verify the Mailu AWS-edge relay restriction without sending DATA
+After=network-online.target wg-quick@wg0.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+User=nobody
+Group=nobody
+Environment="MAIL_EDGE_RELAY_CANARY_HOST=${relay_canary_host}"
+Environment="MAIL_EDGE_RELAY_CANARY_PORT=${relay_canary_port}"
+Environment="MAIL_EDGE_RELAY_CANARY_TIMEOUT_SECONDS=${relay_canary_timeout_seconds}"
+Environment="MAIL_EDGE_RELAY_CANARY_MAIL_FROM=${relay_canary_mail_from}"
+Environment="MAIL_EDGE_RELAY_CANARY_RCPT_TO=${relay_canary_rcpt_to}"
+ExecStart=/usr/bin/python3 /usr/local/libexec/mail-edge-relay-canary.py
+StandardOutput=append:/var/log/mail-edge/relay-canary.log
+StandardError=journal
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6
+TimeoutStartSec=45
+SERVICEEOF
+
+cat >/etc/systemd/system/mail-edge-relay-canary.timer <<'TIMEREOF'
+[Unit]
+Description=Run the Mailu AWS-edge relay restriction probe every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=15s
+RandomizedDelaySec=30s
+Persistent=true
+Unit=mail-edge-relay-canary.service
+
+[Install]
+WantedBy=timers.target
+TIMEREOF
+
+cat >/etc/logrotate.d/mail-edge-relay-canary <<'ROTATEEOF'
+/var/log/mail-edge/relay-canary.log {
+    daily
+    maxsize 5M
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}
+ROTATEEOF
+%{ else }
+systemctl disable --now mail-edge-relay-canary.timer 2>/dev/null || true
+rm -f \
+  /etc/systemd/system/mail-edge-relay-canary.service \
+  /etc/systemd/system/mail-edge-relay-canary.timer \
+  /etc/logrotate.d/mail-edge-relay-canary \
+  /usr/local/libexec/mail-edge-relay-canary.py
+%{ endif }
+
 install -d -m 0755 /opt/aws/amazon-cloudwatch-agent/etc
 cat >/opt/aws/amazon-cloudwatch-agent/etc/mail-edge.json <<'AGENTEOF'
 {
@@ -81,6 +156,15 @@ cat >/opt/aws/amazon-cloudwatch-agent/etc/mail-edge.json <<'AGENTEOF'
             "encoding": "utf-8",
             "timezone": "UTC"
           }
+%{ if relay_canary_enabled },
+          {
+            "file_path": "/var/log/mail-edge/relay-canary.log",
+            "log_group_name": "${haproxy_log_group}",
+            "log_stream_name": "{instance_id}/relay-canary",
+            "encoding": "utf-8",
+            "timezone": "UTC"
+          }
+%{ endif }
         ]
       }
     }
@@ -90,6 +174,10 @@ AGENTEOF
 
 systemctl daemon-reload
 systemctl enable --now mail-edge-haproxy-export.service
+%{ if relay_canary_enabled }
+systemctl enable mail-edge-relay-canary.timer
+systemctl restart mail-edge-relay-canary.timer
+%{ endif }
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config \
   -m ec2 \
@@ -99,3 +187,6 @@ systemctl enable --now mail-edge-haproxy-export.service
 systemctl is-active --quiet haproxy
 systemctl is-active --quiet mail-edge-haproxy-export.service
 systemctl is-active --quiet amazon-cloudwatch-agent
+%{ if relay_canary_enabled }
+systemctl is-active --quiet mail-edge-relay-canary.timer
+%{ endif }

@@ -131,7 +131,7 @@ variable "wireguard_listen_port" {
 }
 
 variable "home_mailu_tunnel_ip" {
-  description = "Home-side Mailu IP reachable through the WireGuard tunnel."
+  description = "Home-side Mailu ClusterIP reachable through WireGuard. Production must use the ClusterIP path that Kubernetes SNATs into the aws_edge_inbound_only Postfix restriction class, not the LAN MetalLB VIP."
   type        = string
   default     = null
 }
@@ -364,24 +364,24 @@ variable "email_canary_log_retention_days" {
 }
 
 variable "enable_open_relay_canary" {
-  description = "Whether the scheduled email canary should perform an external RCPT-only open-relay check against the public MX path. Requires enable_email_canary."
+  description = "Whether the mail-edge EC2 systemd timer should run a RCPT-only relay-policy probe through the WireGuard Mailu backend. Requires CloudWatch observability."
   type        = bool
   default     = false
 
   validation {
-    condition     = !var.enable_open_relay_canary || var.enable_email_canary
-    error_message = "enable_open_relay_canary requires enable_email_canary so the scheduled Lambda and SNS alert path exist."
+    condition     = !var.enable_open_relay_canary || (var.enable_cloudwatch_observability && var.enable_ssm_session_manager)
+    error_message = "enable_open_relay_canary requires enable_cloudwatch_observability and enable_ssm_session_manager for installation, result ingestion, and alarms."
   }
 }
 
 variable "open_relay_canary_port" {
-  description = "Public SMTP port for the RCPT-only open-relay check. Keep this at 25 to exercise the unauthenticated MX path."
+  description = "SMTP port for the RCPT-only relay-policy check. This must remain 25 to exercise the unauthenticated AWS-edge ingress policy."
   type        = number
   default     = 25
 
   validation {
-    condition     = var.open_relay_canary_port >= 1 && var.open_relay_canary_port <= 65535
-    error_message = "open_relay_canary_port must be a valid TCP port."
+    condition     = var.open_relay_canary_port == 25
+    error_message = "open_relay_canary_port must be 25."
   }
 }
 
