@@ -70,6 +70,11 @@ output "ses_event_topic_arn" {
   value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_events[0].arn : null
 }
 
+output "ses_event_queue_url" {
+  description = "Encrypted SQS queue retaining SES failure events for 14 days."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sqs_queue.ses_events[0].url : null
+}
+
 output "ses_alert_topic_arn" {
   description = "SNS topic receiving SES CloudWatch volume and reputation alarm notifications."
   value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_alerts[0].arn : null

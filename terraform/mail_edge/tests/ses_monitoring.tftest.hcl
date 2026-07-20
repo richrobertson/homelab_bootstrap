@@ -49,6 +49,11 @@ run "ses_monitoring_enabled" {
   }
 
   assert {
+    condition     = length(aws_sqs_queue.ses_events) == 1 && length(aws_sns_topic_subscription.ses_events_sqs) == 1
+    error_message = "SES failure events must be retained in the encrypted SQS queue."
+  }
+
+  assert {
     condition     = length(aws_cloudwatch_metric_alarm.ses_send_volume) == 1 && length(aws_cloudwatch_metric_alarm.ses_bounce_reputation) == 1 && length(aws_cloudwatch_metric_alarm.ses_complaint_reputation) == 1
     error_message = "SES monitoring must create volume, bounce, and complaint alarms."
   }
@@ -72,7 +77,7 @@ run "ses_monitoring_disabled" {
   }
 
   assert {
-    condition     = length(aws_ses_configuration_set.mailu) == 0 && length(aws_cloudwatch_metric_alarm.ses_send_volume) == 0
+    condition     = length(aws_ses_configuration_set.mailu) == 0 && length(aws_cloudwatch_metric_alarm.ses_send_volume) == 0 && length(aws_sqs_queue.ses_events) == 0
     error_message = "Disabling SES monitoring must omit its resources."
   }
 

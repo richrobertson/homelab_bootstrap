@@ -220,6 +220,28 @@ data "aws_iam_policy_document" "ses_event_topic" {
   }
 }
 
+data "aws_iam_policy_document" "ses_event_queue" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  statement {
+    sid       = "AllowSNSToSendMessage"
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.ses_events[0].arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_sns_topic.ses_events[0].arn]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "lambda_assume_role" {
   count = var.enable_email_canary ? 1 : 0
 
@@ -773,6 +795,34 @@ resource "aws_sns_topic_policy" "ses_events" {
 
   arn    = aws_sns_topic.ses_events[0].arn
   policy = data.aws_iam_policy_document.ses_event_topic[0].json
+}
+
+resource "aws_sqs_queue" "ses_events" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  name                       = local.ses_event_topic_name
+  message_retention_seconds  = 1209600
+  sqs_managed_sse_enabled    = true
+  visibility_timeout_seconds = 60
+  tags                       = local.common_tags
+}
+
+resource "aws_sqs_queue_policy" "ses_events" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  queue_url = aws_sqs_queue.ses_events[0].url
+  policy    = data.aws_iam_policy_document.ses_event_queue[0].json
+}
+
+resource "aws_sns_topic_subscription" "ses_events_sqs" {
+  count = var.enable_ses && var.enable_ses_monitoring ? 1 : 0
+
+  topic_arn            = aws_sns_topic.ses_events[0].arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.ses_events[0].arn
+  raw_message_delivery = true
+
+  depends_on = [aws_sqs_queue_policy.ses_events]
 }
 
 resource "aws_ses_event_destination" "cloudwatch" {

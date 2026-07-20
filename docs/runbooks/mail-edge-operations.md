@@ -65,8 +65,9 @@ wireguard_home_allowed_ips = ["10.31.0.73/32"]
 separate SNS topics for raw SES failure events and actionable CloudWatch alarms:
 
 - `mail_edge_ses_event_topic_arn` receives bounce, complaint, reject, and
-  rendering-failure events. Add a durable SQS, Lambda, HTTPS, or other SNS
-  subscription as appropriate; it intentionally has no SMS subscription.
+  rendering-failure events. Terraform subscribes an encrypted SQS queue with
+  14-day retention; use `mail_edge_ses_event_queue_url` for incident analysis.
+  Raw failure events intentionally have no SMS subscription.
 - `mail_edge_ses_alert_topic_arn` receives the send-surge, account bounce-rate,
   and account complaint-rate alarms. When the existing canary phone number is
   configured, it is also subscribed to this alert topic.

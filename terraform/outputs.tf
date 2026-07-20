@@ -70,6 +70,11 @@ output "mail_edge_ses_event_topic_arn" {
   value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_event_topic_arn)
 }
 
+output "mail_edge_ses_event_queue_url" {
+  description = "SQS queue URL retaining SES failure events for incident analysis."
+  value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_event_queue_url)
+}
+
 output "mail_edge_ses_alert_topic_arn" {
   description = "SNS topic ARN receiving SES CloudWatch alarm notifications."
   value       = length(module.mail_edge) == 0 ? null : nonsensitive(module.mail_edge[0].ses_alert_topic_arn)
