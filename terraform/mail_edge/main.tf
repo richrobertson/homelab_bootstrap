@@ -30,6 +30,7 @@ locals {
   instance_name                        = "${var.name_prefix}-mail-edge"
   role_name                            = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-mail-edge-ssm", 0, 64)
   smtp_user_name                       = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-ses-smtp", 0, 64)
+  cloudwatch_reader_user_name          = substr("${replace(var.name_prefix, "/[^A-Za-z0-9+=,.@_-]/", "-")}-grafana-cloudwatch", 0, 64)
   ses_configuration_set_name           = substr("${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-mailu", 0, 64)
   ses_event_topic_name                 = "${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-ses-events"
   ses_alert_topic_name                 = "${replace(var.name_prefix, "/[^A-Za-z0-9_-]/", "-")}-ses-alerts"
@@ -176,6 +177,28 @@ data "aws_iam_policy_document" "ses_smtp_send" {
   }
 }
 
+data "aws_iam_policy_document" "grafana_cloudwatch_read" {
+  count = var.enable_ses ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "cloudwatch:DescribeAlarmsForMetric",
+      "cloudwatch:DescribeAlarmHistory",
+      "cloudwatch:DescribeAlarms",
+      "cloudwatch:GetMetricData",
+      "cloudwatch:GetInsightRuleReport",
+      "cloudwatch:GetMetricStatistics",
+      "cloudwatch:ListMetrics",
+      "ec2:DescribeInstances",
+      "ec2:DescribeRegions",
+      "ec2:DescribeTags",
+      "tag:GetResources",
+    ]
+    resources = ["*"]
+  }
+}
+
 data "aws_iam_policy_document" "mail_edge_cloudwatch_logs" {
   count = var.enable_cloudwatch_observability ? 1 : 0
 
@@ -249,8 +272,26 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "email_canary_metrics" {
+  count = var.enable_email_canary ? 1 : 0
+
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["Mailu/EmailCanary"]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "email_canary" {
   count = var.enable_email_canary ? 1 : 0
+
+  source_policy_documents = [data.aws_iam_policy_document.email_canary_metrics[0].json]
 
   statement {
     effect = "Allow"
@@ -1050,6 +1091,39 @@ resource "aws_iam_access_key" "ses_smtp" {
   count = var.enable_ses ? 1 : 0
 
   user = aws_iam_user.ses_smtp[0].name
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_user" "grafana_cloudwatch" {
+  count = var.enable_ses ? 1 : 0
+
+  name = local.cloudwatch_reader_user_name
+  tags = local.common_tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_user_policy" "grafana_cloudwatch" {
+  count = var.enable_ses ? 1 : 0
+
+  name   = "${local.cloudwatch_reader_user_name}-read"
+  user   = aws_iam_user.grafana_cloudwatch[0].name
+  policy = data.aws_iam_policy_document.grafana_cloudwatch_read[0].json
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_access_key" "grafana_cloudwatch" {
+  count = var.enable_ses ? 1 : 0
+
+  user = aws_iam_user.grafana_cloudwatch[0].name
 
   lifecycle {
     prevent_destroy = true

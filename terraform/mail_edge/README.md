@@ -18,7 +18,11 @@ home-hosted Mailu deployment.
   alarms for account send volume, bounce reputation, and complaint reputation.
 - Optionally create a Lambda email canary that runs every five minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
-  when sending or delivery is delayed or rejected.
+  when sending or delivery is delayed or rejected. It publishes per-probe
+  `SendAccepted`, `Success`, `Failure`, and `DeliveryLatencySeconds` metrics in
+  the `Mailu/EmailCanary` namespace.
+- Retain the protected read-only Grafana CloudWatch IAM identity whose
+  sensitive access key is synchronized to Vault by the Terraform root.
 - Optionally install an edge-host RCPT-only relay-policy canary that exercises
   the WireGuard-to-home Postfix path, emits CloudWatch heartbeats, and never
   sends `DATA`.
@@ -26,11 +30,11 @@ home-hosted Mailu deployment.
 
 ## Destroy Guardrails
 
-The stable AWS public IP and SES sending identity are protected with Terraform
-`prevent_destroy` lifecycle rules. Plans that would destroy the Elastic IP, SES
-domain identity, DKIM configuration, MAIL FROM configuration, SES verification,
-or SES SMTP IAM credentials should fail rather than silently breaking inbound
-mail, outbound relay, or DNS reputation.
+The stable AWS public IP, SES sending identity, and Grafana CloudWatch reader
+are protected with Terraform `prevent_destroy` lifecycle rules. Plans that
+would destroy the Elastic IP, SES domain identity, DKIM configuration, MAIL
+FROM configuration, SES verification, SES SMTP IAM credentials, or Grafana
+reader credentials should fail rather than silently breaking mail or monitoring.
 
 ## Traffic Flow
 

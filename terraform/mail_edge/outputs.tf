@@ -55,6 +55,18 @@ output "ses_smtp_password" {
   sensitive   = true
 }
 
+output "grafana_cloudwatch_access_key_id" {
+  description = "Read-only AWS access key ID used by the Grafana CloudWatch datasource."
+  value       = var.enable_ses ? aws_iam_access_key.grafana_cloudwatch[0].id : null
+  sensitive   = true
+}
+
+output "grafana_cloudwatch_secret_access_key" {
+  description = "Read-only AWS secret access key used by the Grafana CloudWatch datasource."
+  value       = var.enable_ses ? aws_iam_access_key.grafana_cloudwatch[0].secret : null
+  sensitive   = true
+}
+
 output "ses_configuration_set_name" {
   description = "SES configuration set to select from Mailu SMTP submissions for fine-grained event publishing."
   value       = var.enable_ses && var.enable_ses_monitoring ? aws_ses_configuration_set.mailu[0].name : null

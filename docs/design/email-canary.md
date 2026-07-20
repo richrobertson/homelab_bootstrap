@@ -73,6 +73,16 @@ The Lambda IAM policy allows:
 - SNS publish to the canary alert topic.
 - Secrets Manager read access to the configured IMAP secret.
 - CloudWatch Logs writes for the canary log group.
+- CloudWatch custom metric writes restricted to `Mailu/EmailCanary` for
+  per-probe `SendAccepted`, `Success`, `Failure`, and
+  `DeliveryLatencySeconds`. Latency is measured from immediately before the SES
+  API call through IMAP detection to preserve the established series semantics.
+
+The production Grafana CloudWatch datasource uses a separate read-only IAM
+user. Terraform protects that user and access key from destruction and stores
+the sensitive credentials at `secret/mailu/prod/aws-observability` for the
+`grafana-aws-cloudwatch` VaultStaticSecret. The reader cannot send mail or
+mutate AWS resources.
 
 ## Failure Semantics
 
