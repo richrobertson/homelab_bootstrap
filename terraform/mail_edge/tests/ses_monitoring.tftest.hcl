@@ -64,6 +64,16 @@ run "ses_monitoring_enabled" {
   }
 
   assert {
+    condition     = aws_cloudwatch_metric_alarm.ses_bounce_reputation[0].treat_missing_data == "ignore"
+    error_message = "The bounce-reputation alarm must retain its current state when SES omits a datapoint."
+  }
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.ses_complaint_reputation[0].treat_missing_data == "ignore"
+    error_message = "The complaint-reputation alarm must retain its current state when SES omits a datapoint."
+  }
+
+  assert {
     condition     = output.ses_configuration_set_header == "X-SES-CONFIGURATION-SET: test-mail-edge-mailu"
     error_message = "The module must expose the SMTP activation header."
   }

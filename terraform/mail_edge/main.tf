@@ -901,7 +901,7 @@ resource "aws_cloudwatch_metric_alarm" "ses_bounce_reputation" {
   period              = var.ses_alarm_period_seconds
   statistic           = "Average"
   threshold           = var.ses_bounce_rate_threshold
-  treat_missing_data  = "notBreaching"
+  treat_missing_data  = "ignore"
   alarm_actions       = [aws_sns_topic.ses_alerts[0].arn]
   tags                = local.common_tags
 }
@@ -919,7 +919,7 @@ resource "aws_cloudwatch_metric_alarm" "ses_complaint_reputation" {
   period              = var.ses_alarm_period_seconds
   statistic           = "Average"
   threshold           = var.ses_complaint_rate_threshold
-  treat_missing_data  = "notBreaching"
+  treat_missing_data  = "ignore"
   alarm_actions       = [aws_sns_topic.ses_alerts[0].arn]
   tags                = local.common_tags
 }

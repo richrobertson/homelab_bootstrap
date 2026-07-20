@@ -79,7 +79,10 @@ independent of configuration-set event publishing.
 Thresholds are configurable through `ses_send_volume_threshold`,
 `ses_bounce_rate_threshold`, and `ses_complaint_rate_threshold`. The reputation
 defaults are 4% bounce and 0.08% complaint, below AWS review levels of 5% and
-0.1% respectively.
+0.1% respectively. SES can omit reputation datapoints during quiet periods, so
+the bounce and complaint alarms retain their current state when data is missing.
+This prevents an active reputation incident from appearing healthy solely due
+to a missing datapoint; missing data while healthy does not independently alert.
 
 ## Email Canary
 
