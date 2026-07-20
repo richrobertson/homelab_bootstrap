@@ -470,6 +470,7 @@ resource "aws_instance" "mail_edge" { # nosemgrep: terraform.aws.security.aws-ec
   lifecycle {
     ignore_changes = [
       ami,
+      user_data,
       user_data_base64,
     ]
   }
