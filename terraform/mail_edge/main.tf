@@ -464,6 +464,16 @@ resource "aws_instance" "mail_edge" { # nosemgrep: terraform.aws.security.aws-ec
     }
   }
 
+  # The edge is a persistent ingress appliance. AMI and bootstrap user-data
+  # upgrades must be deliberate maintenance operations; automatically chasing
+  # the latest AL2023 AMI during an observability-only apply would replace it.
+  lifecycle {
+    ignore_changes = [
+      ami,
+      user_data_base64,
+    ]
+  }
+
   tags = merge(local.common_tags, {
     Name = local.instance_name
   })
