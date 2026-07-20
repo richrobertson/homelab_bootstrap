@@ -198,8 +198,9 @@ output "mailu_home_service_ip" {
 output "mailu_vault_secret_paths" {
   description = "Vault paths seeded for the Mailu Kubernetes deployment."
   value = local.env.environment_name == "prod" ? {
-    app       = local.manage_mailu_app_secret ? "secret/mailu/${local.env.environment_name}/app" : null
-    ses_relay = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/ses-relay" : null
-    config    = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/config" : null
+    app               = local.manage_mailu_app_secret ? "secret/mailu/${local.env.environment_name}/app" : null
+    ses_relay         = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/ses-relay" : null
+    aws_observability = local.manage_mailu_edge_secrets && var.enable_ses ? "secret/mailu/${local.env.environment_name}/aws-observability" : null
+    config            = local.manage_mailu_edge_secrets ? "secret/mailu/${local.env.environment_name}/config" : null
   } : {}
 }
