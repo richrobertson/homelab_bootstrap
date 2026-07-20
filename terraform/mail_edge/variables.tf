@@ -73,6 +73,57 @@ variable "enable_ssm_session_manager" {
   default     = true
 }
 
+variable "enable_cloudwatch_observability" {
+  description = "Whether to centralize HAProxy edge logs in CloudWatch and create abuse/availability alarms. Requires Session Manager so State Manager can configure existing instances."
+  type        = bool
+  default     = true
+
+  validation {
+    condition     = !var.enable_cloudwatch_observability || var.enable_ssm_session_manager
+    error_message = "enable_ssm_session_manager must be true when enable_cloudwatch_observability is enabled."
+  }
+}
+
+variable "mail_edge_log_retention_days" {
+  description = "CloudWatch Logs retention for structured HAProxy connection logs."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.mail_edge_log_retention_days)
+    error_message = "mail_edge_log_retention_days must be a retention period supported by CloudWatch Logs."
+  }
+}
+
+variable "mail_edge_local_log_max_bytes" {
+  description = "Maximum persistent journald disk usage on the edge before old entries are vacuumed."
+  type        = string
+  default     = "512M"
+
+  validation {
+    condition     = can(regex("^[1-9][0-9]*[KMG]$", var.mail_edge_local_log_max_bytes))
+    error_message = "mail_edge_local_log_max_bytes must be a systemd size such as 512M or 1G."
+  }
+}
+
+variable "mail_edge_smtp_connection_alarm_threshold" {
+  description = "Five-minute public SMTP connection count that triggers the edge abuse-volume alarm."
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.mail_edge_smtp_connection_alarm_threshold > 0
+    error_message = "mail_edge_smtp_connection_alarm_threshold must be greater than zero."
+  }
+}
+
+variable "mail_edge_alert_phone_number" {
+  description = "Optional E.164 phone number subscribed to Mailu edge CloudWatch alarm notifications."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "wireguard_listen_port" {
   description = "UDP port used by the WireGuard listener."
   type        = number
@@ -159,6 +210,56 @@ variable "enable_ses" {
   description = "Whether to create SES identity and SMTP credentials."
   type        = bool
   default     = true
+}
+
+variable "enable_ses_monitoring" {
+  description = "Whether to create SES event publishing destinations plus account-level CloudWatch volume and reputation alarms."
+  type        = bool
+  default     = true
+}
+
+variable "ses_alarm_period_seconds" {
+  description = "CloudWatch evaluation period for SES volume and reputation alarms."
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.ses_alarm_period_seconds >= 60
+    error_message = "ses_alarm_period_seconds must be at least 60 seconds."
+  }
+}
+
+variable "ses_send_volume_threshold" {
+  description = "Recipient sends accepted by SES during one alarm period that trigger an outbound-volume alarm."
+  type        = number
+  default     = 100
+
+  validation {
+    condition     = var.ses_send_volume_threshold > 0
+    error_message = "ses_send_volume_threshold must be greater than zero."
+  }
+}
+
+variable "ses_bounce_rate_threshold" {
+  description = "SES account reputation bounce-rate threshold. The default alerts below AWS's 5% review threshold."
+  type        = number
+  default     = 0.04
+
+  validation {
+    condition     = var.ses_bounce_rate_threshold > 0 && var.ses_bounce_rate_threshold <= 1
+    error_message = "ses_bounce_rate_threshold must be greater than zero and no greater than one."
+  }
+}
+
+variable "ses_complaint_rate_threshold" {
+  description = "SES account reputation complaint-rate threshold. The default alerts below AWS's 0.1% review threshold."
+  type        = number
+  default     = 0.0008
+
+  validation {
+    condition     = var.ses_complaint_rate_threshold > 0 && var.ses_complaint_rate_threshold <= 1
+    error_message = "ses_complaint_rate_threshold must be greater than zero and no greater than one."
+  }
 }
 
 variable "manage_ses_route53_records" {
@@ -260,6 +361,51 @@ variable "email_canary_log_retention_days" {
   description = "CloudWatch Logs retention for the email canary Lambda."
   type        = number
   default     = 14
+}
+
+variable "enable_open_relay_canary" {
+  description = "Whether the scheduled email canary should perform an external RCPT-only open-relay check against the public MX path. Requires enable_email_canary."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_open_relay_canary || var.enable_email_canary
+    error_message = "enable_open_relay_canary requires enable_email_canary so the scheduled Lambda and SNS alert path exist."
+  }
+}
+
+variable "open_relay_canary_port" {
+  description = "Public SMTP port for the RCPT-only open-relay check. Keep this at 25 to exercise the unauthenticated MX path."
+  type        = number
+  default     = 25
+
+  validation {
+    condition     = var.open_relay_canary_port >= 1 && var.open_relay_canary_port <= 65535
+    error_message = "open_relay_canary_port must be a valid TCP port."
+  }
+}
+
+variable "open_relay_canary_timeout_seconds" {
+  description = "Socket timeout for each SMTP step in the RCPT-only open-relay check."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.open_relay_canary_timeout_seconds >= 1 && var.open_relay_canary_timeout_seconds <= 30
+    error_message = "open_relay_canary_timeout_seconds must be between 1 and 30 seconds."
+  }
+}
+
+variable "open_relay_canary_mail_from" {
+  description = "Non-local RFC 2606 sender used by the RCPT-only open-relay check. No message body is transmitted."
+  type        = string
+  default     = "open-relay-canary@example.com"
+}
+
+variable "open_relay_canary_rcpt_to" {
+  description = "Non-local RFC 2606 recipient used by the RCPT-only open-relay check. The transaction always stops before DATA."
+  type        = string
+  default     = "open-relay-canary@example.net"
 }
 
 variable "enable_mailu_dovecot_canary" {

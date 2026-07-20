@@ -113,6 +113,37 @@ variable "enable_ssm_session_manager" {
   default     = true
 }
 
+variable "enable_mail_edge_cloudwatch_observability" {
+  description = "Whether to centralize HAProxy edge logs in CloudWatch and create source-volume and availability alarms."
+  type        = bool
+  default     = true
+}
+
+variable "mail_edge_log_retention_days" {
+  description = "CloudWatch Logs retention for structured HAProxy edge connection logs."
+  type        = number
+  default     = 30
+}
+
+variable "mail_edge_local_log_max_bytes" {
+  description = "Maximum persistent journald disk use reserved for local mail-edge evidence."
+  type        = string
+  default     = "512M"
+}
+
+variable "mail_edge_smtp_connection_alarm_threshold" {
+  description = "Five-minute public SMTP connection count that triggers the edge abuse-volume alarm."
+  type        = number
+  default     = 25
+}
+
+variable "mail_edge_alert_phone_number" {
+  description = "Optional E.164 cellphone number override for mail-edge CloudWatch alarms. Defaults to email_canary_alerts_vault_path."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
 variable "wireguard_listen_port" {
   description = "UDP port used by the WireGuard listener on the EC2 mail edge."
   type        = number
@@ -178,6 +209,36 @@ variable "enable_ses" {
   description = "Whether to provision SES identity and SMTP credentials for outbound relay."
   type        = bool
   default     = true
+}
+
+variable "enable_ses_monitoring" {
+  description = "Whether to create SES event publishing plus account-level volume and reputation alarms."
+  type        = bool
+  default     = true
+}
+
+variable "ses_alarm_period_seconds" {
+  description = "CloudWatch evaluation period for SES volume and reputation alarms."
+  type        = number
+  default     = 300
+}
+
+variable "ses_send_volume_threshold" {
+  description = "Recipient sends accepted by SES during one alarm period that trigger an outbound-volume alarm."
+  type        = number
+  default     = 100
+}
+
+variable "ses_bounce_rate_threshold" {
+  description = "SES account reputation bounce-rate threshold."
+  type        = number
+  default     = 0.04
+}
+
+variable "ses_complaint_rate_threshold" {
+  description = "SES account reputation complaint-rate threshold."
+  type        = number
+  default     = 0.0008
 }
 
 variable "manage_ses_route53_records" {
@@ -282,6 +343,29 @@ variable "email_canary_delivery_timeout_seconds" {
   description = "Maximum end-to-end delivery time before the email canary alerts."
   type        = number
   default     = 240
+}
+
+variable "enable_open_relay_canary" {
+  description = "Whether the scheduled AWS Lambda email canary should run a safe external RCPT-only open-relay check against the public MX path."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.enable_open_relay_canary || var.enable_email_canary
+    error_message = "enable_open_relay_canary requires enable_email_canary."
+  }
+}
+
+variable "open_relay_canary_port" {
+  description = "Public SMTP port for the RCPT-only open-relay check. Port 25 exercises the unauthenticated MX path."
+  type        = number
+  default     = 25
+}
+
+variable "open_relay_canary_timeout_seconds" {
+  description = "Socket timeout for each SMTP step in the RCPT-only open-relay check."
+  type        = number
+  default     = 10
 }
 
 variable "enable_mailu_dovecot_canary" {

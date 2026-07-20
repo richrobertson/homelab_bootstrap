@@ -24,6 +24,11 @@ To verify delivery into Kubernetes-hosted Mailu Dovecot folders, set
 `mailu_dovecot_canary_to_address` and
 `mailu_dovecot_canary_imap_secret_arn`.
 
+To detect a recurrence of unauthenticated SMTP relaying, set
+`enable_open_relay_canary = true` after confirming the Lambda can reach the
+public MX on port 25. The canary is deliberately RCPT-only and never sends a
+message body.
+
 Generate the EC2 WireGuard keypair before applying. Terraform expects both
 halves explicitly so it can bootstrap the instance and render the home peer
 config without depending on a local shell helper.
@@ -49,6 +54,35 @@ wireguard_home_allowed_ips = ["10.31.0.73/32"]
    automation is not managing them.
 6. Reconcile the Mailu Flux overlay after the Vault secrets appear so the
    cluster picks up the relay credentials.
+7. Confirm the SES identity reports `mail_edge_ses_configuration_set_name` as
+   its default configuration set.
+8. Send a test message and confirm its `Send` and `Delivery` metrics appear in
+   CloudWatch with the `ses:configuration-set` dimension.
+
+## SES Events and Reputation Alarms
+
+`enable_ses_monitoring` defaults to true with the mail edge. Terraform creates
+separate SNS topics for raw SES failure events and actionable CloudWatch alarms:
+
+- `mail_edge_ses_event_topic_arn` receives bounce, complaint, reject, and
+  rendering-failure events. Terraform subscribes an encrypted SQS queue with
+  14-day retention; use `mail_edge_ses_event_queue_url` for incident analysis.
+  Raw failure events intentionally have no SMS subscription.
+- `mail_edge_ses_alert_topic_arn` receives the send-surge, account bounce-rate,
+  and account complaint-rate alarms. When the existing canary phone number is
+  configured, it is also subscribed to this alert topic.
+
+The send-volume alarm uses the account-level `AWS/SES` `Send` metric, so it
+works as soon as the resources are applied. The bounce and complaint alarms use
+the free account-level SES reputation metrics. Terraform sets the configuration
+set as the identity default, so event metrics apply to Mailu SMTP traffic
+automatically. They may incur standard CloudWatch custom-metric charges; paid
+Virtual Deliverability Manager is not enabled.
+
+Before production apply, review `ses_send_volume_threshold` against expected
+recipient volume. The default is 100 recipients per five minutes. The default
+bounce and complaint thresholds are intentionally below the AWS account-review
+levels.
 
 ## Email Canary
 
@@ -100,6 +134,45 @@ mailbox and point IMAP at the public edge hostname:
 That path verifies `SES -> public MX -> AWS edge -> WireGuard ->
 mailu-front-ext on 10.31.0.73 -> Mailu/Dovecot -> IMAP folder`.
 
+## HAProxy Source-IP Logs
+
+With `enable_mail_edge_cloudwatch_observability = true`, use output
+`mail_edge_haproxy_log_group_name` to open the edge log group. The default
+CloudWatch retention is 30 days. The edge also keeps up to seven days of
+bounded persistent journal and rotated export data for short CloudWatch
+outages.
+
+Use this Logs Insights query to identify public SMTP contributors:
+
+```text
+fields @timestamp, source_ip, source_port, duration_ms, bytes_read, termination_state
+| filter event = "connection" and frontend = "fe_mail_25"
+| stats count(*) as connections,
+        sum(bytes_read) as bytes,
+        max(duration_ms) as longest_ms
+  by source_ip
+| sort connections desc
+| limit 50
+```
+
+The SMTP surge alarm counts edge connections, not SMTP messages or recipients;
+TLS and TCP proxying keep SMTP commands opaque to HAProxy. Tune
+`mail_edge_smtp_connection_alarm_threshold` against the observed baseline and
+keep the Mailu/Postfix recipient-volume alert enabled for message-level abuse.
+
+Validate the pipeline on the instance through SSM:
+
+```sh
+sudo journalctl -t haproxy --since '-10 minutes'
+sudo systemctl status mail-edge-haproxy-export amazon-cloudwatch-agent
+sudo tail -n 20 /var/log/mail-edge/haproxy.log
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+```
+
+Do not add HAProxy `send-proxy`/`send-proxy-v2` independently. Mailu must be
+configured to expect the same header on that port, and current shared LAN
+listeners make such a change unsafe without first separating traffic paths.
+
 ## Manual DNS Outputs
 
 Use these outputs when public DNS is not fully managed by Terraform:
@@ -107,11 +180,17 @@ Use these outputs when public DNS is not fully managed by Terraform:
 - `mail_edge_ses_dns_records_to_create`
 - `mail_edge_dns_records_to_create`
 - `mail_edge_certificate_dns01_cname`
+- `mail_edge_recommended_public_security_dns_records`
 
 For the public internet-facing zone, point the Cloudflare `A` record for
 `mail_hostname` to `mail_edge_elastic_ip`, point the `MX` record for
 `mail_domain` to `mail_hostname`, and point `autoconfig.<mail_domain>` plus
 `autodiscover.<mail_domain>` at `mail_hostname`.
+
+The security output currently contains only the apex SPF record because this
+deployment's outbound path is unambiguously SES-only. DMARC and TLS-RPT require
+real report destinations; MTA-STS additionally requires an HTTPS policy host
+with a valid certificate. Do not publish placeholder destinations.
 
 ## Operational Notes
 

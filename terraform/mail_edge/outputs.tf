@@ -55,6 +55,40 @@ output "ses_smtp_password" {
   sensitive   = true
 }
 
+output "ses_configuration_set_name" {
+  description = "SES configuration set to select from Mailu SMTP submissions for fine-grained event publishing."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_ses_configuration_set.mailu[0].name : null
+}
+
+output "ses_configuration_set_header" {
+  description = "Optional SMTP header that explicitly selects the default Mailu SES configuration set."
+  value       = var.enable_ses && var.enable_ses_monitoring ? "X-SES-CONFIGURATION-SET: ${aws_ses_configuration_set.mailu[0].name}" : null
+}
+
+output "ses_event_topic_arn" {
+  description = "SNS topic receiving SES bounce, complaint, reject, and rendering-failure events."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_events[0].arn : null
+}
+
+output "ses_event_queue_url" {
+  description = "Encrypted SQS queue retaining SES failure events for 14 days."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sqs_queue.ses_events[0].url : null
+}
+
+output "ses_alert_topic_arn" {
+  description = "SNS topic receiving SES CloudWatch volume and reputation alarm notifications."
+  value       = var.enable_ses && var.enable_ses_monitoring ? aws_sns_topic.ses_alerts[0].arn : null
+}
+
+output "ses_alarm_names" {
+  description = "CloudWatch alarm names for SES outbound volume and account reputation."
+  value = var.enable_ses && var.enable_ses_monitoring ? [
+    aws_cloudwatch_metric_alarm.ses_send_volume[0].alarm_name,
+    aws_cloudwatch_metric_alarm.ses_bounce_reputation[0].alarm_name,
+    aws_cloudwatch_metric_alarm.ses_complaint_reputation[0].alarm_name,
+  ] : []
+}
+
 output "ses_dns_records_to_create" {
   description = "SES DNS records to create manually when Route53 automation is not enabled."
   value       = local.manage_ses_dns_records ? [] : local.ses_dns_records
@@ -63,6 +97,11 @@ output "ses_dns_records_to_create" {
 output "mail_dns_records_to_create" {
   description = "Public mail DNS records to create manually when Route53 automation is not enabled."
   value       = local.manage_public_mail_dns_records ? [] : local.mail_dns_records
+}
+
+output "recommended_public_mail_security_dns_records" {
+  description = "Public DNS security records whose values are unambiguous from this module's SES-only outbound design. Review and publish manually."
+  value       = local.recommended_public_mail_security_dns_records
 }
 
 output "reverse_dns_name" {
@@ -92,5 +131,18 @@ output "email_canary_schedule_expression" {
 
 output "email_canary_probe_names" {
   description = "Names of the email canary probes configured for the Lambda."
-  value       = [for probe in local.email_canary_probes : probe.name]
+  value = concat(
+    var.enable_open_relay_canary ? ["open-relay"] : [],
+    [for probe in local.email_canary_probes : probe.name],
+  )
+}
+
+output "haproxy_log_group_name" {
+  description = "CloudWatch Logs group containing structured HAProxy edge connection records."
+  value       = var.enable_cloudwatch_observability ? aws_cloudwatch_log_group.mail_edge_haproxy[0].name : null
+}
+
+output "mail_edge_alert_topic_arn" {
+  description = "SNS topic used by Mailu edge availability and abuse-volume alarms."
+  value       = var.enable_cloudwatch_observability ? aws_sns_topic.mail_edge_alerts[0].arn : null
 }

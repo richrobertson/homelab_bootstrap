@@ -17,6 +17,11 @@ module "mail_edge" {
   instance_type                                 = var.instance_type
   key_name                                      = var.key_name
   enable_ssm_session_manager                    = var.enable_ssm_session_manager
+  enable_cloudwatch_observability               = var.enable_mail_edge_cloudwatch_observability
+  mail_edge_log_retention_days                  = var.mail_edge_log_retention_days
+  mail_edge_local_log_max_bytes                 = var.mail_edge_local_log_max_bytes
+  mail_edge_smtp_connection_alarm_threshold     = var.mail_edge_smtp_connection_alarm_threshold
+  mail_edge_alert_phone_number                  = try(coalesce(var.mail_edge_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null)), null)
   wireguard_listen_port                         = var.wireguard_listen_port
   home_mailu_tunnel_ip                          = var.home_mailu_tunnel_ip
   home_wireguard_peer_public_key                = var.home_wireguard_peer_public_key
@@ -28,6 +33,11 @@ module "mail_edge" {
   mail_hostname                                 = var.mail_hostname
   route53_zone_id                               = var.route53_zone_id
   enable_ses                                    = var.enable_ses
+  enable_ses_monitoring                         = var.enable_ses_monitoring
+  ses_alarm_period_seconds                      = var.ses_alarm_period_seconds
+  ses_send_volume_threshold                     = var.ses_send_volume_threshold
+  ses_bounce_rate_threshold                     = var.ses_bounce_rate_threshold
+  ses_complaint_rate_threshold                  = var.ses_complaint_rate_threshold
   manage_ses_route53_records                    = var.manage_ses_route53_records
   manage_public_mail_dns_records                = var.manage_public_mail_dns_records
   wait_for_ses_domain_verification              = var.wait_for_ses_domain_verification
@@ -37,8 +47,11 @@ module "mail_edge" {
   email_canary_from_address                     = var.email_canary_from_address
   email_canary_to_address                       = var.email_canary_to_address
   email_canary_imap_secret_arn                  = var.email_canary_imap_secret_arn
-  email_canary_alert_phone_number               = coalesce(var.email_canary_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null))
+  email_canary_alert_phone_number               = try(coalesce(var.email_canary_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null)), null)
   email_canary_delivery_timeout_seconds         = var.email_canary_delivery_timeout_seconds
+  enable_open_relay_canary                      = var.enable_open_relay_canary
+  open_relay_canary_port                        = var.open_relay_canary_port
+  open_relay_canary_timeout_seconds             = var.open_relay_canary_timeout_seconds
   enable_mailu_dovecot_canary                   = var.enable_mailu_dovecot_canary
   mailu_dovecot_canary_from_address             = var.mailu_dovecot_canary_from_address
   mailu_dovecot_canary_to_address               = var.mailu_dovecot_canary_to_address

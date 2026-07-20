@@ -12,6 +12,7 @@ than mail transport.
 - Verify mailbox delivery through IMAP.
 - Alert a cellphone by SMS when send or delivery checks fail.
 - Exercise the real Mailu path into Kubernetes-hosted Dovecot folders.
+- Detect public-MX open-relay regressions without transmitting a message body.
 
 ## Architecture
 
@@ -25,6 +26,8 @@ AWS Lambda: prod-mailu-edge-email-canary
   |
   +--> IMAP poll for unique subject/token
   |
+  +--> SMTP RCPT-only open-relay check (optional)
+  |
   +--> SNS topic -> SMS subscription
 ```
 
@@ -34,6 +37,8 @@ uses two probes:
 - `external`: a general SES delivery probe.
 - `mailu-dovecot`: verifies delivery all the way into the Mailu Dovecot IMAP
   folder.
+- `open-relay`: connects from outside the home/cluster trust boundary and
+  requires the public MX to reject a non-local recipient before `DATA`.
 
 ## Mailu Delivery Path
 
@@ -77,6 +82,9 @@ The Lambda alerts when:
 - IMAP credentials cannot be loaded.
 - IMAP login, folder selection, or message search fails.
 - The unique probe message does not appear before the timeout.
+- The public MX accepts a non-local `RCPT TO`, temporarily defers it, or cannot
+  be reached conclusively. The probe always sends `RSET`/`QUIT` and never sends
+  `DATA`.
 
 Delivery misses are intentionally broad signals. They can indicate recipient
 reputation rejection, filtering, DNS trouble, Mailu ingress failure, Dovecot
