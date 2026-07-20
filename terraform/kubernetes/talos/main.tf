@@ -1,6 +1,7 @@
 locals {
   cluster_fqdn     = "cp.${var.cluster_name}.myrobertson.net"
   cluster_endpoint = "https://${local.cluster_fqdn}:6443"
+  talos_version    = "v1.12.10"
   //machine_secrets = yamlencode(var.talos_secrets_yaml)
   machine_secrets      = module.secrets.machine_secrets
   client_configuration = module.secrets.client_configuration
@@ -42,6 +43,7 @@ data "talos_machine_configuration" "controlplane" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "controlplane"
   machine_secrets  = local.machine_secrets
+  talos_version    = local.talos_version
   config_patches = concat(local.global_patches, [
     yamlencode({
       machine = {
@@ -61,6 +63,7 @@ data "talos_machine_configuration" "worker" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "worker"
   machine_secrets  = local.machine_secrets
+  talos_version    = local.talos_version
   config_patches = concat(local.global_patches, [
     yamlencode({
       machine = {

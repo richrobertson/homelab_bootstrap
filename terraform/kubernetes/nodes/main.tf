@@ -11,7 +11,7 @@ terraform {
 locals {
   is_staging                 = contains(["staging", "stage", "stg"], var.environment_name)
   talos_factory_schematic_id = "dc7b152cb3ea99b821fcb7340ce7168313ce393d663740b791c36f6e95fc8586"
-  talos_image_version        = "v1.12.6"
+  talos_image_version        = "v1.12.10"
   cloud_image_url            = "https://factory.talos.dev/image/${local.talos_factory_schematic_id}/${local.talos_image_version}/nocloud-amd64.raw"
   staging_cloud_image_id     = "local:import/nocloud-amd64-${local.talos_image_version}.raw"
   proxmox_group_tag          = contains(["production", "prod"], var.environment_name) ? "prod" : local.is_staging ? "stage" : var.environment_name
