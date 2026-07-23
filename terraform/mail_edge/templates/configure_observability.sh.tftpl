@@ -3,6 +3,22 @@ set -euo pipefail
 
 dnf install -y amazon-cloudwatch-agent logrotate python3
 
+# Reject confirmed abusive SMTP source networks at HAProxy while retaining
+# structured logs for the rejected connections.
+install -d -m 0755 /etc/haproxy
+cat >/etc/haproxy/smtp-blocked-sources.lst <<'BLOCKEDEOF'
+${smtp_blocked_cidr_blocks}
+BLOCKEDEOF
+chmod 0644 /etc/haproxy/smtp-blocked-sources.lst
+
+sed -i '\|^  tcp-request connection reject if { src -f /etc/haproxy/smtp-blocked-sources.lst }$|d' /etc/haproxy/haproxy.cfg
+if [[ -s /etc/haproxy/smtp-blocked-sources.lst ]]; then
+  sed -i '/^frontend fe_mail_25$/,/^$/ {
+    /^  bind 0.0.0.0:25$/a\
+  tcp-request connection reject if { src -f /etc/haproxy/smtp-blocked-sources.lst }
+  }' /etc/haproxy/haproxy.cfg
+fi
+
 # AL2023 uses journald instead of rsyslog. Keep a bounded persistent journal so
 # edge evidence survives reboots and brief CloudWatch delivery interruptions.
 install -d -m 0755 /var/log/journal /etc/systemd/journald.conf.d

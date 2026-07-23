@@ -26,6 +26,9 @@ variables {
   wireguard_ec2_public_key        = "test-ec2-public-key"
   mail_domain                     = "example.com"
   enable_ses                      = false
+  mail_edge_smtp_blocked_cidr_blocks = [
+    "81.30.98.0/24",
+  ]
 }
 
 run "smtp_connection_surge_is_debounced" {
@@ -39,5 +42,15 @@ run "smtp_connection_surge_is_debounced" {
   assert {
     condition     = length(aws_cloudwatch_metric_alarm.smtp_connection_surge[0].alarm_actions) == 1 && length(aws_cloudwatch_metric_alarm.smtp_connection_surge[0].ok_actions) == 0
     error_message = "The SMTP connection surge alarm must notify on ALARM without sending noisy OK notifications."
+  }
+
+  assert {
+    condition     = strcontains(aws_ssm_association.mail_edge_observability[0].parameters["commands"], "81.30.98.0/24")
+    error_message = "The observability association must render configured SMTP source blocks."
+  }
+
+  assert {
+    condition     = strcontains(aws_cloudwatch_log_metric_filter.smtp_connections[0].pattern, "$.termination_state != \"PR\"")
+    error_message = "The SMTP surge metric must exclude HAProxy policy rejections."
   }
 }

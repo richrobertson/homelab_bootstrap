@@ -137,6 +137,12 @@ variable "mail_edge_smtp_connection_alarm_threshold" {
   default     = 25
 }
 
+variable "mail_edge_smtp_blocked_cidr_blocks" {
+  description = "Public source CIDRs rejected by the AWS mail edge before they reach Mailu SMTP."
+  type        = list(string)
+  default     = ["81.30.98.0/24"]
+}
+
 variable "mail_edge_alert_phone_number" {
   description = "Optional E.164 cellphone number override for mail-edge CloudWatch alarms. Defaults to email_canary_alerts_vault_path."
   type        = string
@@ -239,6 +245,12 @@ variable "ses_complaint_rate_threshold" {
   description = "SES account reputation complaint-rate threshold."
   type        = number
   default     = 0.0008
+}
+
+variable "ses_smtp_credential_version" {
+  description = "Version marker used to deliberately rotate the Mailu SES SMTP credential."
+  type        = string
+  default     = "20260723-incident-rotation-1"
 }
 
 variable "manage_ses_route53_records" {

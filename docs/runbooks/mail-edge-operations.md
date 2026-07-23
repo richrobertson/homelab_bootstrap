@@ -197,6 +197,13 @@ single scanner burst does not page. It notifies when entering `ALARM`, but not
 when returning to `OK`; use the CloudWatch state history when recovery timing
 matters.
 
+Confirmed abusive source networks can be rejected on port 25 with
+`mail_edge_smtp_blocked_cidr_blocks`. The SSM association writes the HAProxy
+CIDR file and reloads HAProxy on the existing edge instance, so this does not
+replace the EC2 instance. Rejected connections retain structured log records
+with HAProxy termination state `PR`, but are excluded from the accepted SMTP
+connection surge metric.
+
 Validate the pipeline on the instance through SSM:
 
 ```sh
