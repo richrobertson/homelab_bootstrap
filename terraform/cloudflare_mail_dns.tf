@@ -15,7 +15,7 @@ locals {
     dmarc = {
       name    = "_dmarc.${var.mail_domain}"
       content = "v=DMARC1; p=quarantine; rua=mailto:reports@${var.mail_domain}; adkim=s; aspf=r; fo=1; pct=25"
-      comment = "Mailu sender hardening: staged enforcement with aggregate reports sent to the monitored reports mailbox"
+      comment = "Mailu hardening: staged DMARC enforcement; reports sent to the monitored mailbox"
     }
     mta_sts = {
       name    = "_mta-sts.${var.mail_domain}"
