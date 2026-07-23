@@ -39,6 +39,14 @@ resource "random_password" "mailu_initial_account_password" {
   override_special = "_-@"
 }
 
+resource "random_password" "mailu_report_listener_password" {
+  count = local.manage_mailu_app_secret ? 1 : 0
+
+  length           = 32
+  special          = true
+  override_special = "_-@"
+}
+
 resource "random_password" "mailu_postgres_admin_password" {
   count = local.manage_mailu_app_secret ? 1 : 0
 
@@ -80,6 +88,7 @@ resource "vault_kv_secret_v2" "mailu_app" {
   data_json = jsonencode({
     "secret-key"               = random_password.mailu_secret_key[0].result
     "initial-account-password" = random_password.mailu_initial_account_password[0].result
+    "report-listener-password" = random_password.mailu_report_listener_password[0].result
     "postgres-password"        = random_password.mailu_postgres_admin_password[0].result
     "password"                 = random_password.mailu_postgres_user_password[0].result
     "replication-password"     = random_password.mailu_postgres_replication_password[0].result

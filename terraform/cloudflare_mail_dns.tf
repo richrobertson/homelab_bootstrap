@@ -14,8 +14,8 @@ locals {
     }
     dmarc = {
       name    = "_dmarc.${var.mail_domain}"
-      content = "v=DMARC1; p=quarantine; rua=mailto:postmaster@${var.mail_domain}; adkim=s; aspf=r; fo=1; pct=25"
-      comment = "Mailu sender hardening: staged DMARC enforcement with SES-compatible SPF alignment"
+      content = "v=DMARC1; p=quarantine; rua=mailto:reports@${var.mail_domain}; adkim=s; aspf=r; fo=1; pct=25"
+      comment = "Mailu sender hardening: staged enforcement with aggregate reports sent to the monitored reports mailbox"
     }
     mta_sts = {
       name    = "_mta-sts.${var.mail_domain}"
@@ -24,8 +24,8 @@ locals {
     }
     tls_reporting = {
       name    = "_smtp._tls.${var.mail_domain}"
-      content = "v=TLSRPTv1; rua=mailto:postmaster@${var.mail_domain}"
-      comment = "SMTP TLS reporting to confirmed local postmaster mailbox"
+      content = "v=TLSRPTv1; rua=mailto:reports@${var.mail_domain}"
+      comment = "SMTP TLS reporting to the monitored reports mailbox"
     }
   }
 
