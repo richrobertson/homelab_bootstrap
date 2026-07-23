@@ -30,6 +30,7 @@ variables {
   mail_domain                     = "example.com"
   enable_ses                      = true
   enable_ses_monitoring           = true
+  enable_ses_vdm                  = true
   ses_send_volume_threshold       = 100
   ses_bounce_rate_threshold       = 0.04
   ses_complaint_rate_threshold    = 0.0008
@@ -46,6 +47,21 @@ run "ses_monitoring_enabled" {
   assert {
     condition     = length(aws_ses_event_destination.cloudwatch) == 1 && length(aws_ses_event_destination.sns_failures) == 1
     error_message = "SES monitoring must create both CloudWatch and SNS event destinations."
+  }
+
+  assert {
+    condition     = aws_ses_domain_mail_from.mail[0].behavior_on_mx_failure == "RejectMessage"
+    error_message = "Custom MAIL FROM must reject sends instead of falling back to an unaligned amazonses.com envelope domain."
+  }
+
+  assert {
+    condition     = length(aws_sesv2_account_vdm_attributes.mailu) == 1 && aws_sesv2_account_vdm_attributes.mailu[0].vdm_enabled == "ENABLED"
+    error_message = "SES monitoring must enable Virtual Deliverability Manager when requested."
+  }
+
+  assert {
+    condition     = aws_sesv2_account_vdm_attributes.mailu[0].dashboard_attributes[0].engagement_metrics == "DISABLED" && aws_sesv2_account_vdm_attributes.mailu[0].guardian_attributes[0].optimized_shared_delivery == "ENABLED"
+    error_message = "VDM must optimize shared delivery without enabling open/click tracking."
   }
 
   assert {

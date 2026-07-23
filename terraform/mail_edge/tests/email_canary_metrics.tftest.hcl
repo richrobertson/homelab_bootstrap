@@ -87,6 +87,11 @@ run "email_canary_metric_iam" {
   }
 
   assert {
+    condition     = aws_cloudwatch_event_rule.email_canary[0].schedule_expression == "rate(15 minutes)"
+    error_message = "The end-to-end canary must use the reputation-conscious 15-minute default cadence."
+  }
+
+  assert {
     condition     = length(aws_iam_user.grafana_cloudwatch) == 1 && length(aws_iam_user_policy.grafana_cloudwatch) == 1 && length(aws_iam_access_key.grafana_cloudwatch) == 1
     error_message = "SES-enabled mail edge must retain the existing Grafana CloudWatch reader identity and access key."
   }

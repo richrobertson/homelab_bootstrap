@@ -7,7 +7,7 @@ than mail transport.
 
 ## Goals
 
-- Run automatically every five minutes.
+- Run automatically every fifteen minutes.
 - Send a unique SES probe message.
 - Verify mailbox delivery through IMAP.
 - Alert a cellphone by SMS when send or delivery checks fail.
@@ -16,7 +16,7 @@ than mail transport.
 ## Architecture
 
 ```text
-EventBridge schedule, rate(5 minutes)
+EventBridge schedule, rate(15 minutes)
   |
   v
 AWS Lambda: prod-mailu-edge-email-canary

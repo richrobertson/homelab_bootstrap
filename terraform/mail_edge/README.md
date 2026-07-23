@@ -16,7 +16,7 @@ home-hosted Mailu deployment.
 - Create SES identity, DKIM, custom MAIL FROM, and SMTP credentials.
 - Create SES event publishing, failure-event SNS delivery, and CloudWatch
   alarms for account send volume, bounce reputation, and complaint reputation.
-- Optionally create a Lambda email canary that runs every five minutes, sends a
+- Optionally create a Lambda email canary that runs every fifteen minutes, sends a
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
   when sending or delivery is delayed or rejected. It publishes per-probe
   `SendAccepted`, `Success`, `Failure`, and `DeliveryLatencySeconds` metrics in

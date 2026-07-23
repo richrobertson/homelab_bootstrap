@@ -90,7 +90,7 @@ levels.
 
 ## Email Canary
 
-The optional email canary runs from AWS Lambda every five minutes. It can run
+The optional email canary runs from AWS Lambda every fifteen minutes. It can run
 both an external delivery/reputation probe and a Mailu Dovecot probe in the
 same invocation. Each probe sends a unique message through SES, polls the
 configured recipient mailbox over IMAP, and publishes an SNS alert, including
