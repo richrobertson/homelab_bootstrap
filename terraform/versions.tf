@@ -39,6 +39,10 @@ terraform {
       source  = "hashicorp/archive"
       version = ">= 2.4"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.22"
+    }
   }
 
   backend "s3" {

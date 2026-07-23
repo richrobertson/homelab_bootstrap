@@ -50,6 +50,10 @@ provider "aws" {
   secret_key = local.aws_secret_access_key
 }
 
+provider "cloudflare" {
+  api_token = local.manage_cloudflare_mail_dns ? data.vault_generic_secret.cloudflare[0].data["api-token"] : null
+}
+
 provider "talos" {}
 
 provider "microsoftadcs" {

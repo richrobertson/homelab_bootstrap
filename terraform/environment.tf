@@ -37,6 +37,7 @@ locals {
       }
       gpu_worker_fault_domains  = ["fd-0", "fd-1", "fd-2"]
       gpu_talos_installer_image = "factory.talos.dev/installer/bf2113e1bea48d566f7d1e08eb780f832ccb56bbd7cf2f95769f7a04f9f2b184:v1.12.6"
+      cloudflare_mail_zone_id   = "7f085e8325357312929bc5a6b377907c"
       # Vault PKI policy - production matches current live cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int_prod", capabilities = ["read", "list"] },
@@ -80,6 +81,7 @@ locals {
       }
       gpu_worker_fault_domains  = []
       gpu_talos_installer_image = null
+      cloudflare_mail_zone_id   = null
       # Vault PKI policy - staging uses tighter, cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int_staging", capabilities = ["read", "list"] },
@@ -123,6 +125,7 @@ locals {
       }
       gpu_worker_fault_domains  = []
       gpu_talos_installer_image = null
+      cloudflare_mail_zone_id   = null
       # Vault PKI policy - default uses tighter, cert-issuer-only paths
       vault_pki_policy_paths = [
         { path = "pki_int", capabilities = ["read", "list"] },
