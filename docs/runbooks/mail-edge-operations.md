@@ -192,6 +192,10 @@ The SMTP surge alarm counts edge connections, not SMTP messages or recipients;
 TLS and TCP proxying keep SMTP commands opaque to HAProxy. Tune
 `mail_edge_smtp_connection_alarm_threshold` against the observed baseline and
 keep the Mailu/Postfix recipient-volume alert enabled for message-level abuse.
+The alarm requires two breaching datapoints in three five-minute periods so a
+single scanner burst does not page. It notifies when entering `ALARM`, but not
+when returning to `OK`; use the CloudWatch state history when recovery timing
+matters.
 
 Validate the pipeline on the instance through SSM:
 

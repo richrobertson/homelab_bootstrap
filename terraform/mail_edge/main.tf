@@ -197,6 +197,35 @@ data "aws_iam_policy_document" "grafana_cloudwatch_read" {
     ]
     resources = ["*"]
   }
+
+  dynamic "statement" {
+    for_each = var.enable_cloudwatch_observability ? [1] : []
+
+    content {
+      sid    = "DiscoverAndQueryMailEdgeLogs"
+      effect = "Allow"
+      actions = [
+        "logs:DescribeLogGroups",
+        "logs:StopQuery",
+      ]
+      resources = ["*"]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = var.enable_cloudwatch_observability ? [1] : []
+
+    content {
+      sid    = "ReadMailEdgeHAProxyLogs"
+      effect = "Allow"
+      actions = [
+        "logs:GetLogGroupFields",
+        "logs:GetQueryResults",
+        "logs:StartQuery",
+      ]
+      resources = ["${aws_cloudwatch_log_group.mail_edge_haproxy[0].arn}:*"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "mail_edge_cloudwatch_logs" {
@@ -659,9 +688,10 @@ resource "aws_cloudwatch_metric_alarm" "smtp_connection_surge" {
   count = var.enable_cloudwatch_observability ? 1 : 0
 
   alarm_name          = "${local.instance_name}-smtp-connection-surge"
-  alarm_description   = "Public SMTP connection volume at the Mailu AWS edge exceeded the expected homelab baseline. Use the HAProxy log group's source_ip field to identify top contributors."
+  alarm_description   = "Public SMTP connection volume at the Mailu AWS edge exceeded the expected homelab baseline in at least two of three five-minute periods. Use the HAProxy log group's source_ip field to identify top contributors."
   comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = 1
+  evaluation_periods  = 3
+  datapoints_to_alarm = 2
   metric_name         = aws_cloudwatch_log_metric_filter.smtp_connections[0].metric_transformation[0].name
   namespace           = local.mail_edge_metric_namespace
   period              = 300
@@ -669,7 +699,7 @@ resource "aws_cloudwatch_metric_alarm" "smtp_connection_surge" {
   threshold           = var.mail_edge_smtp_connection_alarm_threshold
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.mail_edge_alerts[0].arn]
-  ok_actions          = [aws_sns_topic.mail_edge_alerts[0].arn]
+  ok_actions          = []
   tags                = local.common_tags
 }
 
