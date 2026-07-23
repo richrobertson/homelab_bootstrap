@@ -44,3 +44,9 @@ data "vault_generic_secret" "email_canary_alerts" {
 
   path = var.email_canary_alerts_vault_path
 }
+
+data "vault_generic_secret" "cloudflare" {
+  count = local.manage_cloudflare_mail_dns ? 1 : 0
+
+  path = "secret/cloudflare"
+}
