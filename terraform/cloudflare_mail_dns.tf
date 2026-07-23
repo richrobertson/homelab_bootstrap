@@ -14,8 +14,8 @@ locals {
     }
     dmarc = {
       name    = "_dmarc.${var.mail_domain}"
-      content = "v=DMARC1; p=none; rua=mailto:postmaster@${var.mail_domain}; adkim=s; aspf=s; fo=1; pct=100"
-      comment = "Mailu incident hardening baseline; monitor before enforcement"
+      content = "v=DMARC1; p=quarantine; rua=mailto:postmaster@${var.mail_domain}; adkim=s; aspf=r; fo=1; pct=25"
+      comment = "Mailu sender hardening: staged DMARC enforcement with SES-compatible SPF alignment"
     }
     mta_sts = {
       name    = "_mta-sts.${var.mail_domain}"

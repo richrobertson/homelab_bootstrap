@@ -253,6 +253,24 @@ variable "ses_smtp_credential_version" {
   default     = "20260723-incident-rotation-1"
 }
 
+variable "enable_ses_vdm" {
+  description = "Whether to enable Amazon SES Virtual Deliverability Manager for account-level deliverability diagnostics."
+  type        = bool
+  default     = true
+}
+
+variable "enable_ses_vdm_engagement_metrics" {
+  description = "Whether VDM may collect open and click engagement metrics. Disabled by default to avoid tracking pixels and link rewriting."
+  type        = bool
+  default     = false
+}
+
+variable "enable_ses_vdm_optimized_shared_delivery" {
+  description = "Whether VDM may optimize selection among SES shared sending IPs."
+  type        = bool
+  default     = true
+}
+
 variable "manage_ses_route53_records" {
   description = "Whether to create SES verification, DKIM, and MAIL FROM Route53 records when route53_zone_id is provided."
   type        = bool
@@ -349,6 +367,17 @@ variable "email_canary_alerts_vault_path" {
   description = "Vault KV path containing email canary alert settings. Expected key: phone_number."
   type        = string
   default     = "secret/mailu/prod/email-canary-alerts"
+}
+
+variable "email_canary_schedule_expression" {
+  description = "EventBridge schedule expression for the end-to-end SES delivery canaries."
+  type        = string
+  default     = "rate(15 minutes)"
+
+  validation {
+    condition     = can(regex("^(rate|cron)\\(.+\\)$", var.email_canary_schedule_expression))
+    error_message = "email_canary_schedule_expression must be an EventBridge rate(...) or cron(...) expression."
+  }
 }
 
 variable "email_canary_delivery_timeout_seconds" {

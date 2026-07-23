@@ -40,6 +40,9 @@ module "mail_edge" {
   ses_bounce_rate_threshold                     = var.ses_bounce_rate_threshold
   ses_complaint_rate_threshold                  = var.ses_complaint_rate_threshold
   ses_smtp_credential_version                   = var.ses_smtp_credential_version
+  enable_ses_vdm                                = var.enable_ses_vdm
+  enable_ses_vdm_engagement_metrics             = var.enable_ses_vdm_engagement_metrics
+  enable_ses_vdm_optimized_shared_delivery      = var.enable_ses_vdm_optimized_shared_delivery
   manage_ses_route53_records                    = var.manage_ses_route53_records
   manage_public_mail_dns_records                = var.manage_public_mail_dns_records
   wait_for_ses_domain_verification              = var.wait_for_ses_domain_verification
@@ -50,6 +53,7 @@ module "mail_edge" {
   email_canary_to_address                       = var.email_canary_to_address
   email_canary_imap_secret_arn                  = var.email_canary_imap_secret_arn
   email_canary_alert_phone_number               = try(coalesce(var.email_canary_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null)), null)
+  email_canary_schedule_expression              = var.email_canary_schedule_expression
   email_canary_delivery_timeout_seconds         = var.email_canary_delivery_timeout_seconds
   enable_open_relay_canary                      = var.enable_open_relay_canary
   open_relay_canary_port                        = var.open_relay_canary_port

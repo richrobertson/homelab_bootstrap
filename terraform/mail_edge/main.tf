@@ -908,8 +908,9 @@ resource "aws_sesv2_email_identity" "mail" {
 resource "aws_ses_domain_mail_from" "mail" {
   count = var.enable_ses ? 1 : 0
 
-  domain           = aws_sesv2_email_identity.mail[var.mail_domain].email_identity
-  mail_from_domain = local.mail_from_domain
+  domain                 = aws_sesv2_email_identity.mail[var.mail_domain].email_identity
+  mail_from_domain       = local.mail_from_domain
+  behavior_on_mx_failure = "RejectMessage"
 
   lifecycle {
     prevent_destroy = true
@@ -952,6 +953,20 @@ resource "aws_ses_configuration_set" "mailu" {
   name                       = local.ses_configuration_set_name
   reputation_metrics_enabled = false
   sending_enabled            = true
+}
+
+resource "aws_sesv2_account_vdm_attributes" "mailu" {
+  count = var.enable_ses && var.enable_ses_vdm ? 1 : 0
+
+  vdm_enabled = "ENABLED"
+
+  dashboard_attributes {
+    engagement_metrics = var.enable_ses_vdm_engagement_metrics ? "ENABLED" : "DISABLED"
+  }
+
+  guardian_attributes {
+    optimized_shared_delivery = var.enable_ses_vdm_optimized_shared_delivery ? "ENABLED" : "DISABLED"
+  }
 }
 
 resource "aws_sns_topic" "ses_events" {
@@ -1249,7 +1264,7 @@ resource "aws_cloudwatch_event_rule" "email_canary" {
   count = var.enable_email_canary ? 1 : 0
 
   name                = "${local.email_canary_name}-schedule"
-  description         = "Run the SES email canary every five minutes."
+  description         = "Run the SES email canary on the configured delivery-check schedule."
   schedule_expression = var.email_canary_schedule_expression
   tags                = local.common_tags
 }

@@ -273,6 +273,24 @@ variable "ses_complaint_rate_threshold" {
   }
 }
 
+variable "enable_ses_vdm" {
+  description = "Whether to enable Amazon SES Virtual Deliverability Manager for account-level deliverability diagnostics."
+  type        = bool
+  default     = false
+}
+
+variable "enable_ses_vdm_engagement_metrics" {
+  description = "Whether VDM may collect open and click engagement metrics."
+  type        = bool
+  default     = false
+}
+
+variable "enable_ses_vdm_optimized_shared_delivery" {
+  description = "Whether VDM may optimize selection among SES shared sending IPs."
+  type        = bool
+  default     = true
+}
+
 variable "ses_smtp_credential_version" {
   description = "Version marker used to deliberately rotate the Mailu SES SMTP credential."
   type        = string
@@ -364,7 +382,12 @@ variable "email_canary_alert_phone_number" {
 variable "email_canary_schedule_expression" {
   description = "EventBridge schedule expression for the canary."
   type        = string
-  default     = "rate(5 minutes)"
+  default     = "rate(15 minutes)"
+
+  validation {
+    condition     = can(regex("^(rate|cron)\\(.+\\)$", var.email_canary_schedule_expression))
+    error_message = "email_canary_schedule_expression must be an EventBridge rate(...) or cron(...) expression."
+  }
 }
 
 variable "email_canary_delivery_timeout_seconds" {

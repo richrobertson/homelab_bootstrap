@@ -1,19 +1,22 @@
 # Mail Domain Hardening
 
-Public `myrobertson.net` DNS is hosted by Cloudflare and is not managed by this
-Terraform root. The DNS provider configured here is split-horizon/internal, so
-the records below must be reviewed and published in Cloudflare separately.
+Public `myrobertson.net` DNS is hosted by Cloudflare. The Terraform root manages
+the public mail-policy TXT records through `cloudflare_mail_dns.tf`; its
+separate DNS provider remains split-horizon/internal.
 
 ## Verified Public State
 
-Checked through Cloudflare's public resolver on 2026-07-20:
+Checked through Cloudflare's public resolver on 2026-07-23:
 
 - `myrobertson.net MX 10 mail.myrobertson.net.`
 - `mail.myrobertson.net A 44.237.126.101`
 - `bounce.myrobertson.net MX 10 feedback-smtp.us-west-2.amazonses.com.`
 - `bounce.myrobertson.net TXT "v=spf1 include:amazonses.com ~all"`
-- No apex SPF, `_dmarc`, `_mta-sts`, or `_smtp._tls` TXT answer.
-- `mta-sts.myrobertson.net` does not resolve and no HTTPS policy is hosted.
+- `myrobertson.net TXT "v=spf1 include:amazonses.com -all"`
+- `_dmarc.myrobertson.net TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"`
+- `_mta-sts.myrobertson.net TXT "v=STSv1; id=20260723T194500Z;"`
+- `_smtp._tls.myrobertson.net TXT "v=TLSRPTv1; rua=mailto:postmaster@myrobertson.net"`
+- `mta-sts.myrobertson.net` serves an enforced HTTPS policy for `mail.myrobertson.net`.
 
 Re-run these checks immediately before any DNS change:
 
@@ -26,7 +29,7 @@ dig @1.1.1.1 +short _smtp._tls.myrobertson.net TXT
 curl -fsS https://mta-sts.myrobertson.net/.well-known/mta-sts.txt
 ```
 
-## Ready Record
+## SPF Policy
 
 The architecture requires all outbound Mailu delivery to use Amazon SES. The
 Terraform output `mail_edge_recommended_public_security_dns_records` therefore
@@ -36,54 +39,41 @@ emits the one public policy whose sender and value are already established:
 myrobertson.net. 300 IN TXT "v=spf1 include:amazonses.com -all"
 ```
 
-Publish only after confirming there are no undiscovered services using a
-different envelope sender path. Keep the existing dedicated
-`bounce.myrobertson.net` SES MAIL FROM records.
+Keep the existing dedicated `bounce.myrobertson.net` SES MAIL FROM records and
+review this policy before adding any other outbound service.
 
-## Staged Records With Blockers
+## DMARC Enforcement
 
-DMARC is blocked on a confirmed aggregate-report mailbox or HTTPS report
-collector. After provisioning `dmarc-reports@myrobertson.net`, start with:
-
-```text
-_dmarc.myrobertson.net. 300 IN TXT "v=DMARC1; p=none; rua=mailto:dmarc-reports@myrobertson.net; adkim=r; aspf=r; pct=100"
-```
-
-Review aligned SPF/DKIM results for at least two weeks, then progress through
-`p=quarantine; pct=25`, higher percentages, and finally `p=reject; pct=100`.
-
-SMTP TLS reporting is blocked on a confirmed report destination. After
-provisioning `tls-reports@myrobertson.net`, publish:
+The confirmed `postmaster@myrobertson.net` mailbox receives aggregate reports.
+SES signs with aligned DKIM. Its custom MAIL FROM domain is the
+`bounce.myrobertson.net` subdomain, so SPF uses relaxed alignment while DKIM
+remains strict. The first enforcement stage is:
 
 ```text
-_smtp._tls.myrobertson.net. 300 IN TXT "v=TLSRPTv1; rua=mailto:tls-reports@myrobertson.net"
+_dmarc.myrobertson.net. 300 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"
 ```
 
-MTA-STS is blocked on a Cloudflare DNS record plus an HTTPS origin serving a
-valid certificate and this exact path:
+Review aligned SPF/DKIM results for at least one week, then progress through
+`p=quarantine; pct=100` and finally `p=reject; pct=100`.
+
+SMTP TLS reports use the confirmed postmaster mailbox:
+
+```text
+_smtp._tls.myrobertson.net. 300 IN TXT "v=TLSRPTv1; rua=mailto:postmaster@myrobertson.net"
+```
+
+MTA-STS is enforced at this HTTPS origin:
 
 ```text
 https://mta-sts.myrobertson.net/.well-known/mta-sts.txt
 ```
 
-Start the policy in testing mode:
-
-```text
-version: STSv1
-mode: testing
-mx: mail.myrobertson.net
-max_age: 86400
-```
-
-After the HTTPS policy is live and verified, publish
-`_mta-sts.myrobertson.net TXT "v=STSv1; id=<deployment-timestamp>"`. Change the
-ID whenever the policy changes. Review TLS-RPT results before switching to
-`mode: enforce` and a longer `max_age`.
+Change the `_mta-sts` policy ID whenever the HTTPS policy changes.
 
 ## Validation Order
 
-1. Confirm SES DKIM is enabled and passing on real outbound mail.
-2. Publish and verify the apex SPF record.
-3. Provision report destinations and deploy DMARC with `p=none` plus TLS-RPT.
-4. Deploy and validate the HTTPS MTA-STS policy in testing mode.
-5. Observe reports, then progressively enforce DMARC and MTA-STS.
+1. Confirm SES DKIM and custom MAIL FROM remain successful.
+2. Verify the apex SPF, DMARC, MTA-STS, and TLS-RPT records publicly.
+3. Review DMARC aggregate reports during each enforcement stage.
+4. Progress to `p=quarantine; pct=100`, then `p=reject; pct=100`.
+5. Keep the MTA-STS HTTPS policy and DNS policy ID synchronized.
