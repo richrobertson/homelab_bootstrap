@@ -1269,6 +1269,29 @@ resource "aws_cloudwatch_event_rule" "email_canary" {
   tags                = local.common_tags
 }
 
+resource "aws_cloudwatch_metric_alarm" "email_canary_heartbeat_missing" {
+  count = var.enable_email_canary ? 1 : 0
+
+  alarm_name          = "${local.email_canary_name}-heartbeat-missing"
+  alarm_description   = "The SES email canary missed two consecutive 15-minute invocation windows. Check the EventBridge schedule, Lambda function, and CloudWatch logs."
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  datapoints_to_alarm = 2
+  threshold           = 1
+  metric_name         = "Invocations"
+  namespace           = "AWS/Lambda"
+  period              = 900
+  statistic           = "Sum"
+  treat_missing_data  = "breaching"
+  dimensions = {
+    FunctionName = aws_lambda_function.email_canary[0].function_name
+  }
+  alarm_actions             = [aws_sns_topic.email_canary_alerts[0].arn]
+  ok_actions                = [aws_sns_topic.email_canary_alerts[0].arn]
+  insufficient_data_actions = []
+  tags                      = local.common_tags
+}
+
 resource "aws_cloudwatch_event_target" "email_canary" {
   count = var.enable_email_canary ? 1 : 0
 
