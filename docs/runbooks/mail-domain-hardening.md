@@ -46,7 +46,10 @@ review this policy before adding any other outbound service.
 
 The dedicated `reports@myrobertson.net` mailbox receives aggregate reports. The
 GitOps-managed mail report listener consumes that mailbox and exposes report
-health to Prometheus and Alertmanager.
+health to Prometheus and Alertmanager. Its scoped mailbox credential is stored
+at `secret/mailu/prod/report-listener` in Vault and synchronized by the Vault
+Secrets Operator.
+
 SES signs with aligned DKIM. Its custom MAIL FROM domain is the
 `bounce.myrobertson.net` subdomain, so SPF uses relaxed alignment while DKIM
 remains strict. The first enforcement stage is:
