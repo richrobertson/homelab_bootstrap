@@ -117,6 +117,17 @@ variable "mail_edge_smtp_connection_alarm_threshold" {
   }
 }
 
+variable "mail_edge_smtp_blocked_cidr_blocks" {
+  description = "Public source CIDRs rejected by HAProxy on the SMTP listener before traffic reaches Mailu."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for cidr in var.mail_edge_smtp_blocked_cidr_blocks : can(cidrhost(cidr, 0))])
+    error_message = "mail_edge_smtp_blocked_cidr_blocks must contain valid IPv4 or IPv6 CIDRs."
+  }
+}
+
 variable "mail_edge_alert_phone_number" {
   description = "Optional E.164 phone number subscribed to Mailu edge CloudWatch alarm notifications."
   type        = string
@@ -259,6 +270,17 @@ variable "ses_complaint_rate_threshold" {
   validation {
     condition     = var.ses_complaint_rate_threshold > 0 && var.ses_complaint_rate_threshold <= 1
     error_message = "ses_complaint_rate_threshold must be greater than zero and no greater than one."
+  }
+}
+
+variable "ses_smtp_credential_version" {
+  description = "Version marker used to deliberately rotate the Mailu SES SMTP credential."
+  type        = string
+  default     = "initial"
+
+  validation {
+    condition     = length(trimspace(var.ses_smtp_credential_version)) > 0
+    error_message = "ses_smtp_credential_version must not be empty."
   }
 }
 

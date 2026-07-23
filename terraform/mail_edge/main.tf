@@ -612,7 +612,7 @@ resource "aws_cloudwatch_log_metric_filter" "smtp_connections" {
 
   name           = "${local.instance_name}-smtp-connections"
   log_group_name = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
-  pattern        = "{ $.event = \"connection\" && $.frontend = \"fe_mail_25\" }"
+  pattern        = "{ $.event = \"connection\" && $.frontend = \"fe_mail_25\" && $.termination_state != \"PR\" }"
 
   metric_transformation {
     name          = "SmtpConnections"
@@ -812,6 +812,7 @@ resource "aws_ssm_association" "mail_edge_observability" {
       aws_region                   = var.aws_region
       haproxy_log_group            = aws_cloudwatch_log_group.mail_edge_haproxy[0].name
       local_log_max_bytes          = var.mail_edge_local_log_max_bytes
+      smtp_blocked_cidr_blocks     = join("\n", var.mail_edge_smtp_blocked_cidr_blocks)
       relay_canary_enabled         = var.enable_open_relay_canary
       relay_canary_host            = local.effective_home_mailu_tunnel_ip
       relay_canary_mail_from       = var.open_relay_canary_mail_from
@@ -1123,8 +1124,16 @@ resource "aws_iam_access_key" "ses_smtp" {
   user = aws_iam_user.ses_smtp[0].name
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
+    replace_triggered_by  = [terraform_data.ses_smtp_credential_rotation[0]]
   }
+}
+
+resource "terraform_data" "ses_smtp_credential_rotation" {
+  count = var.enable_ses ? 1 : 0
+
+  input            = var.ses_smtp_credential_version
+  triggers_replace = [var.ses_smtp_credential_version]
 }
 
 resource "aws_iam_user" "grafana_cloudwatch" {

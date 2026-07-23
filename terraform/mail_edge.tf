@@ -21,6 +21,7 @@ module "mail_edge" {
   mail_edge_log_retention_days                  = var.mail_edge_log_retention_days
   mail_edge_local_log_max_bytes                 = var.mail_edge_local_log_max_bytes
   mail_edge_smtp_connection_alarm_threshold     = var.mail_edge_smtp_connection_alarm_threshold
+  mail_edge_smtp_blocked_cidr_blocks            = var.mail_edge_smtp_blocked_cidr_blocks
   mail_edge_alert_phone_number                  = try(coalesce(var.mail_edge_alert_phone_number, try(data.vault_generic_secret.email_canary_alerts[0].data["phone_number"], null)), null)
   wireguard_listen_port                         = var.wireguard_listen_port
   home_mailu_tunnel_ip                          = var.home_mailu_tunnel_ip
@@ -38,6 +39,7 @@ module "mail_edge" {
   ses_send_volume_threshold                     = var.ses_send_volume_threshold
   ses_bounce_rate_threshold                     = var.ses_bounce_rate_threshold
   ses_complaint_rate_threshold                  = var.ses_complaint_rate_threshold
+  ses_smtp_credential_version                   = var.ses_smtp_credential_version
   manage_ses_route53_records                    = var.manage_ses_route53_records
   manage_public_mail_dns_records                = var.manage_public_mail_dns_records
   wait_for_ses_domain_verification              = var.wait_for_ses_domain_verification
