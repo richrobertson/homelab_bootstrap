@@ -92,6 +92,18 @@ run "email_canary_metric_iam" {
   }
 
   assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].namespace == "AWS/Lambda" &&
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].metric_name == "Invocations" &&
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].period == 900 &&
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].evaluation_periods == 2 &&
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].datapoints_to_alarm == 2 &&
+      aws_cloudwatch_metric_alarm.email_canary_heartbeat_missing[0].treat_missing_data == "breaching"
+    )
+    error_message = "The email canary must alarm after two missed 15-minute invocation windows."
+  }
+
+  assert {
     condition     = length(aws_iam_user.grafana_cloudwatch) == 1 && length(aws_iam_user_policy.grafana_cloudwatch) == 1 && length(aws_iam_access_key.grafana_cloudwatch) == 1
     error_message = "SES-enabled mail edge must retain the existing Grafana CloudWatch reader identity and access key."
   }

@@ -20,7 +20,8 @@ home-hosted Mailu deployment.
   unique SES probe, checks a mailbox through IMAP, and alerts through SNS/SMS
   when sending or delivery is delayed or rejected. It publishes per-probe
   `SendAccepted`, `Success`, `Failure`, and `DeliveryLatencySeconds` metrics in
-  the `Mailu/EmailCanary` namespace.
+  the `Mailu/EmailCanary` namespace and alarms after two missed invocation
+  windows.
 - Retain the protected read-only Grafana CloudWatch IAM identity whose
   sensitive access key is synchronized to Vault by the Terraform root.
 - Optionally install an edge-host RCPT-only relay-policy canary that exercises

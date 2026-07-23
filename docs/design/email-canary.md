@@ -26,6 +26,8 @@ AWS Lambda: prod-mailu-edge-email-canary
   +--> IMAP poll for unique subject/token
   |
   +--> SNS topic -> SMS subscription
+  |
+  +--> CloudWatch invocation heartbeat alarm -> SNS topic
 ```
 
 The Lambda supports multiple named probes in one invocation. The current design
@@ -92,6 +94,11 @@ The Lambda alerts when:
 - IMAP credentials cannot be loaded.
 - IMAP login, folder selection, or message search fails.
 - The unique probe message does not appear before the timeout.
+
+CloudWatch separately alarms when the Lambda misses two consecutive
+fifteen-minute invocation windows. This detects failures in EventBridge,
+Lambda invocation, or the scheduler path that cannot execute the Lambda's own
+failure notification code.
 
 Delivery misses are intentionally broad signals. They can indicate recipient
 reputation rejection, filtering, DNS trouble, Mailu ingress failure, Dovecot
