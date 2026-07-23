@@ -13,9 +13,9 @@ Checked through Cloudflare's public resolver on 2026-07-23:
 - `bounce.myrobertson.net MX 10 feedback-smtp.us-west-2.amazonses.com.`
 - `bounce.myrobertson.net TXT "v=spf1 include:amazonses.com ~all"`
 - `myrobertson.net TXT "v=spf1 include:amazonses.com -all"`
-- `_dmarc.myrobertson.net TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"`
+- `_dmarc.myrobertson.net TXT "v=DMARC1; p=quarantine; rua=mailto:reports@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"`
 - `_mta-sts.myrobertson.net TXT "v=STSv1; id=20260723T194500Z;"`
-- `_smtp._tls.myrobertson.net TXT "v=TLSRPTv1; rua=mailto:postmaster@myrobertson.net"`
+- `_smtp._tls.myrobertson.net TXT "v=TLSRPTv1; rua=mailto:reports@myrobertson.net"`
 - `mta-sts.myrobertson.net` serves an enforced HTTPS policy for `mail.myrobertson.net`.
 
 Re-run these checks immediately before any DNS change:
@@ -44,22 +44,24 @@ review this policy before adding any other outbound service.
 
 ## DMARC Enforcement
 
-The confirmed `postmaster@myrobertson.net` mailbox receives aggregate reports.
+The dedicated `reports@myrobertson.net` mailbox receives aggregate reports. The
+GitOps-managed mail report listener consumes that mailbox and exposes report
+health to Prometheus and Alertmanager.
 SES signs with aligned DKIM. Its custom MAIL FROM domain is the
 `bounce.myrobertson.net` subdomain, so SPF uses relaxed alignment while DKIM
 remains strict. The first enforcement stage is:
 
 ```text
-_dmarc.myrobertson.net. 300 IN TXT "v=DMARC1; p=quarantine; rua=mailto:postmaster@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"
+_dmarc.myrobertson.net. 300 IN TXT "v=DMARC1; p=quarantine; rua=mailto:reports@myrobertson.net; adkim=s; aspf=r; fo=1; pct=25"
 ```
 
 Review aligned SPF/DKIM results for at least one week, then progress through
 `p=quarantine; pct=100` and finally `p=reject; pct=100`.
 
-SMTP TLS reports use the confirmed postmaster mailbox:
+SMTP TLS reports use the monitored reports mailbox:
 
 ```text
-_smtp._tls.myrobertson.net. 300 IN TXT "v=TLSRPTv1; rua=mailto:postmaster@myrobertson.net"
+_smtp._tls.myrobertson.net. 300 IN TXT "v=TLSRPTv1; rua=mailto:reports@myrobertson.net"
 ```
 
 MTA-STS is enforced at this HTTPS origin:
